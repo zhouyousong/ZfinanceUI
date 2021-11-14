@@ -1,6 +1,6 @@
 import copy
-import matplotlib.pyplot as plt
-from matplotlib.font_manager import FontProperties
+# import matplotlib.pyplot as plt
+# from matplotlib.font_manager import FontProperties
 import talib
 import yfinance as yf
 import pandas as pd

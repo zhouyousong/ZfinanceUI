@@ -1,4 +1,4 @@
-
+from enum import Enum
 
 EXTENDLEN = 100
 PROXYEN   = '127.0.0.1:7890'

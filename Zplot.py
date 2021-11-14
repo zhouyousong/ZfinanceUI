@@ -7,9 +7,9 @@ import plotly.express as px
 import plotly.graph_objs as go
 import plotly.io as pio
 import plotly.subplots as sp
-import dash_core_components as dcc
-import dash_html_components as html
-import dash
+# import dash_core_components as dcc
+# import dash_html_components as html
+# import dash
 import pyecharts.options as opts
 from pyecharts.charts import Bar3D,Bar,Grid, Line, Scatter,Page,Kline
 from pyecharts.options.global_options import ThemeType
