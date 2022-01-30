@@ -54,6 +54,8 @@ TempColorRed = 2
 TempColorGreen = 3
 TempColorGray = 4
 
+ScrollBarPosition = 0
+
 GlobalAPP = None
 class DownloadUIProc:
     def __init__(self,GlobalUI,APP,GlobalFavorEditorUI):
@@ -103,20 +105,20 @@ class DownloadUIProc:
 
         self.DLUIInit = False
 
-        ConfigFilePathName = os.getcwd()+'\\Data\\00_Config\\Default.ZFCfg'
-        try:
-            with open(ConfigFilePathName,'r') as load_f:
-                CfgDict = json.load(load_f)
-            ZBaseFunc.Log2LogBox('Load Default Download Config success!!')
-        except:
-            ZBaseFunc.Log2LogBox('Load Default Download Config Fail!!')
-            pass
+        # ConfigFilePathName = os.getcwd()+'\\Data\\00_Config\\Default.ZFCfg'
+        # try:
+        #     with open(ConfigFilePathName,'r') as load_f:
+        #         CfgDict = json.load(load_f)
+        #     ZBaseFunc.Log2LogBox('Load Default Download Config success!!')
+        # except:
+        #     ZBaseFunc.Log2LogBox('Load Default Download Config Fail!!')
+        #     pass
 
     def FavorListChechboxSelectMenu(self):
         popMenu = QMenu()
         if self.DownloadCfgUI.FavorList.currentItem().parent() == None:
-            CancelAll  = popMenu.addAction("取消全选")
             SelectAll  = popMenu.addAction('全选')
+            CancelAll  = popMenu.addAction("取消全选")
 
             CancelAll.triggered.connect(self.CancelAllChildrenInFavorList)
             SelectAll.triggered.connect(self.SelectAllChildrenInFavorList)
@@ -187,6 +189,7 @@ class DownloadUIProc:
         self.DownloadCfgUI.DownloadPeriod.setTickInterval(1)
         if(not self.DLUIInit):
             self.DownloadCfgUI.MulitThreadDL.addItems(ZfinanceCfg.MulitThreadList_c)
+            self.DownloadCfgUI.SkipPeriod.addItems(ZfinanceCfg.SkipPeriodList_c)
             self.DownloadCfgUI.ReConnect.addItems(ZfinanceCfg.ReConnectList_c)
             self.DownloadCfgUI.TimeOut.addItems(ZfinanceCfg.TimeOutList_c)
             self.HandleOpenDLConfig(Default=True)
@@ -229,6 +232,9 @@ class DownloadUIProc:
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
         CfgDict['VPNEnable_x']      = self.DownloadCfgUI.VPNEnable.isChecked()
 
+        CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
+        CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentIndex())
+
         self.DownloadCfgUI.close()
 
     def HandleSaveDLConfig(self):
@@ -265,10 +271,10 @@ class DownloadUIProc:
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
 
-
-
         CfgDict['VPNEnable_x']      = self.DownloadCfgUI.VPNEnable.isChecked()
 
+        CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentText())
+        CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
 
         ConfigFilePathName ,ok = QFileDialog.getSaveFileName(None, "配置文件保存",'Data/00_Config','ZfinanceCfg (*.ZFCfg)')
 
@@ -318,9 +324,6 @@ class DownloadUIProc:
             self.DownloadCfgUI.FunAna_Dividends.setChecked(CfgDict['FunAna_Dividends_x'])
             self.DownloadCfgUI.FunAna_Splits.setChecked(CfgDict['FunAna_Splits_x'])
 
-
-            CheckedRadioButton.setChecked(True)
-
             self.DownloadCfgUI.DownloadPeriod.setValue(ZfinanceCfg.PeriodDict['PeriodStrPara'].index(CfgDict['DownloadPeriod_x']))
 
             self.DownloadCfgUI.MulitThreadDL.setCurrentIndex(ZfinanceCfg.MulitThreadList_c.index(str(CfgDict['MulitThreadDL_x'])))
@@ -328,20 +331,16 @@ class DownloadUIProc:
             self.DownloadCfgUI.TimeOut.setCurrentIndex(ZfinanceCfg.TimeOutList_c.index(str(CfgDict['TimeOut_x'])))
 
             self.DownloadCfgUI.VPNEnable.setChecked(CfgDict['VPNEnable_x'])
+
+            self.DownloadCfgUI.SkipPeriod.setCurrentIndex(ZfinanceCfg.SkipPeriodList_c.index(str(CfgDict['SkipPeriod_x'])))
+            self.DownloadCfgUI.SkipNG.setChecked(CfgDict['SkipNG_x'])
         except:
             pass
         print(ConfigFilePathName)
 
         DataBasePath = os.getcwd() + '\\Data\\01_TickerDatabase'
-        TickerFolders = os.listdir(DataBasePath)
-        InfoDataBase = pd.DataFrame()
-        # for TickerFolder in TickerFolders:
-        #     TempInfPath = DataBasePath+'/'+TickerFolder+'/'+TickerFolder+'_inf.csv'
-        #     try:
-        #         TempInfo = pd.read_csv(TempInfPath,sep=',',index_col='symbol')
-        #         InfoDataBase = InfoDataBase.append(TempInfo)
-        #     except:
-        #         pass
+        if (not os.path.exists(DataBasePath)):
+            os.mkdir(DataBasePath)
         return
 
     def CloseDownloadCfgUI(self):
@@ -360,7 +359,7 @@ def HandleDownloadAbort():
 
 def HandleDownloadStart():
     global DownloadAbortFlag,GlobalDLUI
-    global Process,ProcessLen, GlobalMainUI,TableInitFlag,CfgDict,VPN
+    global Process,ProcessLen, GlobalMainUI,TableInitFlag,CfgDict,VPN,ScrollBarPosition
     DownloadAbortFlag = False
     Process = 0
     PeriodLimitlList = []
@@ -382,17 +381,17 @@ def HandleDownloadStart():
 
     if CfgDict['Intervial_30min_x']:
         if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['30m', '2mo',20])
+            IntervialAndPeriodList.append(['30m', '60d',20])
         else:
             IntervialAndPeriodList.append(['30m', DownloadPeriod,Period2Days])
     if CfgDict['Intervial_15min_x']:
         if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['15m', '2mo',20])
+            IntervialAndPeriodList.append(['15m', '60d',20])
         else:
             IntervialAndPeriodList.append(['15m', DownloadPeriod,Period2Days])
     if CfgDict['Intervial_5min_x']:
         if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['5m', '2mo',20])
+            IntervialAndPeriodList.append(['5m', '60d',20])
         else:
             IntervialAndPeriodList.append(['5m', DownloadPeriod,Period2Days])
     if CfgDict['Intervial_1min_x']:
@@ -418,7 +417,7 @@ def HandleDownloadStart():
     ReConnectCnt = CfgDict['ReConnectCnt_x']
 
     if CfgDict['VPNEnable_x']:
-        VPN = '127.0.0.1:7890'
+        VPN = ZfinanceCfg.PROXYEN
     else:
         VPN = None
     #http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs
@@ -455,7 +454,7 @@ def HandleDownloadStart():
 #############
     if CfgDict['List_Favor_x']:
         cursor = QTreeWidgetItemIterator(GlobalDLUI.FavorList)
-        ChildCnt = cursor.value().childCount()
+        RemoveList = []
 
         while cursor.value():
             Temp = cursor.value()
@@ -468,30 +467,32 @@ def HandleDownloadStart():
                 for i in range(ChildCnt):
                     cursor = cursor.__iadd__(1)
                     Temp = cursor.value()
-                    print('Delete-' + Temp.text(0))
-                    try:
-                        SymbolsList.remove(Temp.text(0))
-                    except:
-                        pass
+                    RemoveList.append(Temp.text(0))
             cursor = cursor.__iadd__(1)
 ############################去重复
-    temp_list = []
-    for one in SymbolsList:
-        if one not in temp_list:
-            temp_list.append(one)
-    SymbolsList = temp_list
+        temp_list = []
+        for one in SymbolsList:
+            if one not in temp_list:
+                temp_list.append(one)
+        SymbolsList = temp_list
 ############################
-    DataBasePath = os.getcwd() + '\\Data\\01_TickerDatabase'
+        for i in RemoveList:
+            try:
+                print("Remove:"+i)
+                SymbolsList.remove(i)
+            except:
+                pass
+############################
 
-
-    IntervalCfg = 0
     ProcessLen = len(SymbolsList)
     ZBaseFunc.Log2LogBox('SymbolsList count ='+str(ProcessLen))
     GlobalMainUI.SymbolsDownloadProgressBar.setValue(0)
     #QTableWidget.setRowHeight()horizontalHeader().setSectionResizeMode(QHeaderView.Fixed);
 
+    ScrollBarPosition = 0
     if False:#TableInitFlag:
         GlobalMainUI.SymbolsDownloadTable.clear()
+        GlobalMainUI.SymbolsDownloadTable.verticalScrollBar().setValue(0)
         pass
     else:
         TableInitFlag = True
@@ -560,8 +561,6 @@ def DeleteUselessOKNG(FolderPath):
 
 
 
-ScrollBarPosition = 0
-
 def DownloadThread(SymbolsList=[],IntervialAndPeriodList = [],FunAnaList = [],ThreadIndex = 0,ReConnectCnt = 1,TimeStamp='',NewFileEndTime=None):
     global GlobalMainUI, DownloadProcessBarChannel,DownloadAbortFlag,Process,ScrollBarPosition
     global TempColorGreen, TempColorYellow, TempColorRed,VPN,ThreadCnt,TickersInfo
@@ -601,6 +600,9 @@ def DownloadThread(SymbolsList=[],IntervialAndPeriodList = [],FunAnaList = [],Th
             CreatInUseLocker.acquire()
             if(not os.path.exists(InUseFilePath)):
                 open(InUseFilePath,'w').close()
+                TempPath = ZBaseFunc.GetCompleteFileName(Path=TempFolderPath + '/TAG_NG_')
+                if TempPath != None:
+                    LastNGDate = int(datetime.datetime.fromtimestamp(int(TempPath.split('NG_')[1])).strftime("%Y%m%d"))
                 DeleteUselessOKNG(TempFolderPath)       #删除之前的NG OK标签
                 CreatInUseLocker.release()
             else:
@@ -644,6 +646,7 @@ def DownloadThread(SymbolsList=[],IntervialAndPeriodList = [],FunAnaList = [],Th
                             OKFLAG = False
                             continue
                     TempPath = ZBaseFunc.GetCompleteFileName(Path = TempFolderPath + '/' + Symbol + "_" + IntervialAndPeriodList_i[0])
+                    NewVsSkipPeriodFileEndTime = int((datetime.datetime.strptime(str(NewFileEndTime), "%Y%m%d") - datetime.timedelta(days=CfgDict['SkipPeriod_x'])*3).strftime("%Y%m%d"))
                     if IntervialAndPeriodList_i[2] == -1:
                         NewFileStartTime = 19000101
                     else:
@@ -652,13 +655,21 @@ def DownloadThread(SymbolsList=[],IntervialAndPeriodList = [],FunAnaList = [],Th
                     if(TempPath != None):
                         ExistFileStartTime  = int(TempPath.split('_')[2])
                         ExistFileEndTime    = int(TempPath.split('_')[3])
-                        if ((TempPath.split('_')[4] == 'max.csv')and (ExistFileEndTime>=NewFileEndTime)) or\
-                        ((ExistFileStartTime<=NewFileStartTime) and (ExistFileEndTime>=NewFileEndTime)):        #如果已存在文件范围比要下载的大
+                        if ((TempPath.split('_')[4] == 'max.csv')and (ExistFileEndTime>=NewVsSkipPeriodFileEndTime)) or\
+                        ((ExistFileStartTime<=NewFileStartTime) and (ExistFileEndTime>=NewVsSkipPeriodFileEndTime)):        #如果已存在文件范围比要下载的大
                             TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)               #不再下载，直接标绿色
                             continue                                                                            #退出此次循环
                         Tempdf_Exist = pd.read_csv(TempFolderPath + '/' + TempPath, sep=',', index_col='DateTime')
 
                     else:
+                        if CfgDict['SkipNG_x']:
+                            try:
+                                if(LastNGDate > NewVsSkipPeriodFileEndTime):
+                                    OKFLAG = False
+                                    TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)               #不再下载，直接标红色
+                                    continue                                                                            #退出此次循环
+                            except:
+                                pass
                         ExistFileEndTime = ExistFileStartTime = NewFileEndTime
                     try:
                         SYM = Zfinance.SingleStockQuotations(Symbol)

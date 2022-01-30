@@ -1,4 +1,5 @@
 import os
+import time
 
 import plotly,ZBaseFunc
 import pandas as pd
@@ -199,10 +200,31 @@ def ZBar3D(PlotItem = dict()):
     page.render("page_default_layout.html")
 
     webbrowser.open(os.getcwd()+'\page_default_layout.html')
-t = 0
-def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,ActionList,
-               FlPL,StdPL,FixPL,SP500PL ):
-    global t
+
+def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,ActionList,
+               FlPL,StdPL,FixPL,SP500PL,BackTestDict,TempFolderPath ):
+
+    ZBaseFunc.Log2LogBox("Start <DrawCharts> Function")
+    AEMATP = [
+        BackTestDict['AEMATP']['Length1'],
+        BackTestDict['AEMATP']['Length2'],
+        BackTestDict['AEMATP']['Length3'],
+        BackTestDict['AEMATP']['Length4'],
+        BackTestDict['AEMATP']['Length5'],
+        BackTestDict['AEMATP']['Length6']
+    ]
+    RSIDataLen = (len(RSIData))
+    RSIName = [
+        RSIData.columns[0],
+        RSIData.columns[1],
+        RSIData.columns[2]
+    ]
+    RSIDataList = [
+        RSIData.iloc[:, 0].tolist(),
+        RSIData.iloc[:, 1].tolist(),
+        RSIData.iloc[:, 2].tolist()
+        ]
+    TrendGate = BackTestDict['Trading']['TrendGate']
     MarkPointList=list()
     for Action in ActionList:
         MarkPointList.append(opts.MarkPointItem(name="自定义标记点", coord=[TimeStamp.index(Action['TimeStamp']),
@@ -213,7 +235,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
         Kline()
             .add_xaxis(xaxis_data=TimeStamp)
             .add_yaxis(
-            series_name=Symbol,
+            series_name="Kline",
             y_axis=kline_data,
             itemstyle_opts=opts.ItemStyleOpts(color="#00da3c", color0="#ec0000"),
             markpoint_opts=opts.MarkPointOpts(
@@ -227,21 +249,21 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
         )
     )
     #########################趋势线分割##############################
-    AEMATrend = KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[5]) + ']'].tolist()
+    AEMATrend = AEMAData['AEMA_[' + str(AEMATP[5]) + ']'].tolist()
     LineOffset = 0.005*(AEMATrend[0]+AEMATrend[-1])/2
     TrendUp  = ['-' for i in range(len(AEMATrend))]
     TrendDn  = ['-' for i in range(len(AEMATrend))]
     TrendNo  = ['-' for i in range(len(AEMATrend))]
 
     flag = 0
-    RSIData_14=RSIData['RSI_[14]'].tolist()
+
     for i in range(len(AEMATrend)):
-        if TrendVal[i] < -ZfinanceCfg.TrendGate:
+        if TrendVal[i] < -TrendGate:
             TrendDn[i] = AEMATrend[i]-LineOffset
             if flag != 1:
                 TrendDn[i-1] = AEMATrend[i-1]-LineOffset
             flag = 1
-        elif TrendVal[i] < ZfinanceCfg.TrendGate:
+        elif TrendVal[i] < TrendGate:
             TrendNo[i] = AEMATrend[i]-LineOffset
             if flag != 0:
                 TrendNo[i-1] = AEMATrend[i-1]-LineOffset
@@ -252,12 +274,12 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
                 TrendUp[i-1] = AEMATrend[i-1]-LineOffset
             flag = -1
     ################################################################
-    KAMAline = (
+    AEMAline = (
         Line()
             .add_xaxis(xaxis_data=TimeStamp)
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[0]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[0]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[0]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[0]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -265,8 +287,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             is_symbol_show=False
         )
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[1]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[1]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[1]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[1]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -274,8 +296,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             is_symbol_show=False
         )
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[2]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[2]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[2]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[2]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -283,8 +305,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             is_symbol_show=False
         )
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[3]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[3]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[3]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[3]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -292,8 +314,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             is_symbol_show=False
         )
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[4]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[4]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[4]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[4]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -301,8 +323,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             is_symbol_show=False
         )
             .add_yaxis(
-            series_name="AdativeEMA"+str(ZfinanceCfg.KAMATP[5]),
-            y_axis=KAMAData['KAMA_[' + str(ZfinanceCfg.KAMATP[5]) + ']'].tolist(),
+            series_name="AdativeEMA"+str(AEMATP[5]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[5]) + ']'].tolist(),
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -341,34 +363,36 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
     ################################################################
     OverSellValue = 20
     OverBuyValue  = 80
-    OverSellRSI = ['-' for i in range(len(RSIData))]
-    RegularRSI  = ['-' for i in range(len(RSIData))]
-    OverBuyRSI  = ['-' for i in range(len(RSIData))]
+
+    OverSellRSI = ['-' for i in range(RSIDataLen)]
+    RegularRSI  = ['-' for i in range(RSIDataLen)]
+    OverBuyRSI  = ['-' for i in range(RSIDataLen)]
     flag = 0
-    RSIData_14=RSIData['RSI_[14]'].tolist()
-    for i in range(len(RSIData)):
-        if RSIData_14[i] > OverBuyValue:
-            OverBuyRSI[i] = RSIData_14[i]
+    ZBaseFunc.Log2LogBox("start OverBuy and OverSell calc")
+    for i in range(RSIDataLen):
+        if RSIDataList[0][i] > OverBuyValue:
+            OverBuyRSI[i] = RSIDataList[0][i]
             if flag == 0:
-                OverBuyRSI[i-1] = RSIData_14[i-1]
+                OverBuyRSI[i-1] = RSIDataList[0][i-1]
             flag = 1
-        elif RSIData_14[i] > OverSellValue:
-            RegularRSI[i] = RSIData_14[i]
+        elif RSIDataList[0][i] > OverSellValue:
+            RegularRSI[i] = RSIDataList[0][i]
             if flag != 0:
-                RegularRSI[i-1] = RSIData_14[i-1]
+                RegularRSI[i-1] = RSIDataList[0][i-1]
             flag = 0
         else:
-            OverSellRSI[i] = RSIData_14[i]
+            OverSellRSI[i] = RSIDataList[0][i]
             if flag == 0:
-                OverSellRSI[i-1] = RSIData_14[i-1]
+                OverSellRSI[i-1] = RSIDataList[0][i-1]
             flag = -1
+    ZBaseFunc.Log2LogBox("End OverBuy and OverSell calc")
     ################################################################
     RSIline = (
         Line()
             .add_xaxis(xaxis_data=TimeStamp)
             .add_yaxis(
                 y_axis=OverBuyRSI,
-                series_name="OverBuyRSI_14",
+                series_name="OverBuy:"+RSIName[0],
                 linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
                 is_symbol_show=False,
                 #itemstyle_opts=opts.ItemStyleOpts(color="#ec0000"),
@@ -378,7 +402,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             )
             .add_yaxis(
                 y_axis=RegularRSI,
-                series_name="RegularRSI_14",
+                series_name="Regular:"+RSIName[0],
                 is_smooth=False,
                 is_hover_animation=False,
                 linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -388,7 +412,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             )
             .add_yaxis(
                 y_axis=OverSellRSI,
-                series_name="OverSellRSI_14",
+                series_name="OverSell:"+RSIName[0],
                 linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
                 is_symbol_show=False,
                 markline_opts=opts.MarkLineOpts(
@@ -396,8 +420,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
                 ),
             )
             .add_yaxis(
-            y_axis=RSIData['RSI_[21]'].tolist(),
-            series_name="RSI_21",
+            y_axis=RSIDataList[1],
+            series_name=RSIName[1],
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -405,8 +429,8 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             label_opts=opts.LabelOpts(is_show=False),
         )
             .add_yaxis(
-            y_axis=RSIData['RSI_[50]'].tolist(),
-            series_name="RSI_50",
+            y_axis=RSIDataList[2],
+            series_name=RSIName[2],
             is_smooth=False,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
@@ -462,7 +486,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
         )
     )
     # Kline And Line
-    overlap_kline_line = kline.overlap(KAMAline)
+    overlap_kline_line = kline.overlap(AEMAline)
 
     # Grid Overlap + Bar
     grid_chart = Grid(
@@ -475,7 +499,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
     )
     grid_chart.add(
         overlap_kline_line.set_global_opts(
-            title_opts=opts.TitleOpts(pos_top="2%", title="Kline&KAMA"),
+            title_opts=opts.TitleOpts(pos_top="2%", title="Kline&AEMA:"+Symbol),
             datazoom_opts=[
                 opts.DataZoomOpts(
                     is_show=False,
@@ -547,7 +571,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
 
     )
     grid_chart.add(
-        RSIline.set_global_opts(title_opts = opts.TitleOpts(pos_top="63%", title="RSI14"),
+        RSIline.set_global_opts(title_opts = opts.TitleOpts(pos_top="63%", title="RSI"),
                                 legend_opts=opts.LegendOpts(pos_top="63%"),),
         grid_opts=opts.GridOpts(
             pos_left="4%", pos_right="8%", pos_top="66%", height="9%"
@@ -561,7 +585,21 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,KAMAData,TrendVal,RSIData,Actio
             pos_left="4%", pos_right="8%", pos_top="82%", height="12%"
         ),
     )
-    grid_chart.render(Symbol+"_Kline_RSI_PL.html")
-    webbrowser.open(os.getcwd()+"\\"+Symbol+"_Kline_RSI_PL.html")
+    ZBaseFunc.Log2LogBox("Draw Finished")
+    if BackTestDict['WebPage']['Save']:
+        grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+        ZBaseFunc.Log2LogBox("Generated html")
+        if BackTestDict['WebPage']['AutoOpen']:
+            webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+            ZBaseFunc.Log2LogBox("Opened html")
+    else:
+        if BackTestDict['WebPage']['AutoOpen']:
+            grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+            ZBaseFunc.Log2LogBox("Generated html")
+            webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+            ZBaseFunc.Log2LogBox("Opened html")
+            time.sleep(3)
+            os.remove(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+            ZBaseFunc.Log2LogBox("Deleted html")
 
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>811</width>
-    <height>414</height>
+    <width>771</width>
+    <height>452</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -55,7 +55,7 @@
   <widget class="QCheckBox" name="Intervial_1Day">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>28</y>
      <width>71</width>
      <height>21</height>
@@ -68,7 +68,7 @@
   <widget class="QCheckBox" name="Intervial_1h">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>50</y>
      <width>71</width>
      <height>21</height>
@@ -81,7 +81,7 @@
   <widget class="QCheckBox" name="Intervial_30min">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>70</y>
      <width>71</width>
      <height>21</height>
@@ -94,8 +94,8 @@
   <widget class="QPushButton" name="CancelDownload">
    <property name="geometry">
     <rect>
-     <x>660</x>
-     <y>330</y>
+     <x>628</x>
+     <y>370</y>
      <width>61</width>
      <height>31</height>
     </rect>
@@ -107,8 +107,8 @@
   <widget class="QPushButton" name="ConfirmDownload">
    <property name="geometry">
     <rect>
-     <x>732</x>
-     <y>330</y>
+     <x>700</x>
+     <y>370</y>
      <width>61</width>
      <height>31</height>
     </rect>
@@ -124,8 +124,8 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>300</y>
-     <width>471</width>
+     <y>340</y>
+     <width>441</width>
      <height>22</height>
     </rect>
    </property>
@@ -154,7 +154,7 @@
   <widget class="QCheckBox" name="Intervial_15min">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>90</y>
      <width>71</width>
      <height>21</height>
@@ -167,7 +167,7 @@
   <widget class="QCheckBox" name="Intervial_5min">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>110</y>
      <width>71</width>
      <height>21</height>
@@ -180,7 +180,7 @@
   <widget class="QCheckBox" name="Intervial_1min">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>130</y>
      <width>81</width>
      <height>21</height>
@@ -193,7 +193,7 @@
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>540</x>
+     <x>510</x>
      <y>30</y>
      <width>101</width>
      <height>31</height>
@@ -207,7 +207,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>330</y>
+     <y>370</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -220,7 +220,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>330</y>
+     <y>370</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -232,8 +232,8 @@
   <widget class="QLabel" name="ShowPeriod">
    <property name="geometry">
     <rect>
-     <x>600</x>
-     <y>330</y>
+     <x>550</x>
+     <y>370</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -245,17 +245,17 @@
   <widget class="QTableView" name="tableView">
    <property name="geometry">
     <rect>
-     <x>540</x>
+     <x>510</x>
      <y>80</y>
      <width>251</width>
-     <height>211</height>
+     <height>251</height>
     </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_6">
    <property name="geometry">
     <rect>
-     <x>680</x>
+     <x>650</x>
      <y>30</y>
      <width>111</width>
      <height>31</height>
@@ -269,13 +269,16 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>140</y>
+     <y>120</y>
      <width>81</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
     <string>代理</string>
+   </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QCheckBox" name="List_Favor">
@@ -295,7 +298,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>180</y>
+     <y>160</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -308,7 +311,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>160</y>
+     <y>140</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -320,7 +323,7 @@
   <widget class="QCheckBox" name="FunAna_Info">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>170</y>
      <width>81</width>
      <height>21</height>
@@ -334,7 +337,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>230</y>
+     <y>210</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -344,7 +347,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>210</y>
+     <y>190</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -357,7 +360,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>270</y>
+     <y>250</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -367,7 +370,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>250</y>
+     <y>230</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -379,7 +382,7 @@
   <widget class="QCheckBox" name="FunAna_Financials">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>190</y>
      <width>81</width>
      <height>21</height>
@@ -392,7 +395,7 @@
   <widget class="QCheckBox" name="FunAna_Balancesheet">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>210</y>
      <width>81</width>
      <height>21</height>
@@ -405,7 +408,7 @@
   <widget class="QCheckBox" name="FunAna_Cashflow">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>230</y>
      <width>81</width>
      <height>21</height>
@@ -419,8 +422,8 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>370</y>
-     <width>391</width>
+     <y>410</y>
+     <width>351</width>
      <height>31</height>
     </rect>
    </property>
@@ -432,7 +435,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>370</y>
+     <y>410</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -548,10 +551,10 @@
   <widget class="QTreeWidget" name="FavorList">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>140</y>
      <width>291</width>
-     <height>261</height>
+     <height>301</height>
     </rect>
    </property>
    <column>
@@ -563,7 +566,7 @@
   <widget class="QCheckBox" name="FunAna_Dividends">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>250</y>
      <width>81</width>
      <height>21</height>
@@ -576,7 +579,7 @@
   <widget class="QCheckBox" name="FunAna_Splits">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>420</x>
      <y>270</y>
      <width>81</width>
      <height>21</height>
@@ -599,10 +602,49 @@
     <string>数据清洗</string>
    </property>
   </widget>
+  <widget class="QComboBox" name="SkipPeriod">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>310</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="currentText">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ShowPeriod_7">
+   <property name="geometry">
+    <rect>
+     <x>320</x>
+     <y>290</y>
+     <width>91</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>跳过间隔</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="SkipNG">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>310</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>跳过NG</string>
+   </property>
+   <property name="autoExclusive">
+    <bool>false</bool>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
- <buttongroups>
-  <buttongroup name="DownloadIR"/>
- </buttongroups>
 </ui>

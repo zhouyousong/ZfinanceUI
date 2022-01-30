@@ -13,6 +13,9 @@ import glob,os
 import time
 StartTime = 0
 GlobalMainUI = None
+
+
+
 def InitLogBox(UI = None):
     global GlobalMainUI,StartTime
     GlobalMainUI = UI
@@ -127,3 +130,26 @@ def GetCompleteFileName(Path):
     for i in glob.glob(Path+'*'):
         return(os.path.basename(i))
     return None
+
+def dataframe_generation_from_table(table):
+    number_of_rows = table.rowCount()
+    number_of_columns = table.columnCount()
+    TempHeader = []
+    TempIndexs = []
+    for i in range(1,number_of_columns):
+        TempHeader.append(table.horizontalHeaderItem(i).text())
+    for i in range(number_of_rows):
+        TempIndexs.append(table.item(i,0).text())
+    tmp_df = pd.DataFrame(
+                columns=TempHeader, # Fill columnets
+                index=TempIndexs
+                )
+
+    for i in range(number_of_rows):
+        for j in range(number_of_columns-1):
+            try:
+                tmp_df.iloc[i, j] = table.item(i, j+1).text()
+            except:
+                tmp_df.iloc[i, j] = 'NA'
+
+    return tmp_df

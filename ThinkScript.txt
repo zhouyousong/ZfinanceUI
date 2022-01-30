@@ -1,0 +1,202 @@
+
+input raisescaleTrendup = 1000;
+input fallscaleTrendup = 970;
+input Elimitup = 2;
+
+input raisescaleTrenddn = 1100;
+input fallscaleTrenddn = 1000;
+input Elimitdn = 2;
+
+input raisescaleTrendNo = 1000;
+input fallscaleTrendNo = 1000;
+input Elimitno = 2;
+
+input lastIndex = 3;
+input LockBuyLen = 10;
+input StopLossRate = 95;
+input RSILen   = 21;
+input TrendLen = 100;
+input TrendDnRatio = 95;
+input ClosureRatio = 0.01;
+
+def AMA_8_Len = 8;
+def AMA_21_Len = 21;
+def AMA_50_Len = 50;
+def AMA_144_Len = 144;
+def AMA_200_Len = 200;
+
+def Elimit;
+def raisescale;
+def fallscale;
+plot Trendup;
+plot TrendDn;
+plot TrendNo;
+
+plot AMA_8   = AdaptiveEMA(close, 8);
+plot AMA_21  = AdaptiveEMA(close, 21);
+plot AMA_50  = AdaptiveEMA(close, 50);
+plot AMA_144 = AdaptiveEMA(close, 144);
+plot AMA_200 = AdaptiveEMA(close, 200);
+plot AMA_350 = AdaptiveEMA(close, 350);
+def RSI = RSI(RSIlen);
+input Trendgate = 0.0001;
+if ((AMA_350[0] - AMA_350[1] ) / AMA_350[1]) <= 0 - Trendgate
+{
+    Trenddn = 1;
+    Trendup = 0;
+        TrendNo = 0;
+}
+else if ((AMA_350[0] - AMA_350[1] ) / AMA_350[1]) >= 0 + Trendgate
+{
+    Trendup = 1;
+    Trenddn = 0;
+   TrendNo = 0;
+}
+else
+{
+    if ((AMA_350[0] - AMA_350[lastIndex] ) / AMA_350[lastIndex]) <=  0 - Trendgate
+    {
+        Trenddn = 1;
+        Trendup = 0;
+        TrendNo = 0;
+    }
+    else if ((AMA_350[0] - AMA_350[lastIndex] ) / AMA_350[lastIndex]) >= 0 + Trendgate
+    {
+        Trendup = 1;
+        Trenddn = 0;
+        TrendNo = 0;
+    }
+    else
+    {
+        Trendup = 0;
+        Trenddn = 0;
+        TrendNo = 1;
+    }
+}
+
+if Trendup == 1 and  Trenddn == 0
+{
+    Elimit = Elimitup;
+    fallscale  = fallscaleTrendup;
+    raisescale = raisescaleTrendup;
+}
+else if Trendup == 0 and  Trenddn == 1
+{
+    Elimit = Elimitdn;
+    fallscale  = fallscaleTrenddn;
+    raisescale = raisescaleTrenddn;
+} else
+{
+    Elimit = Elimitno;
+    fallscale  = fallscaleTrendNo;
+    raisescale = raisescaleTrendNo;
+}
+
+
+def A;
+def B;
+def C;
+def D;
+
+if AMA_8 < AMA_21 * fallscale / 1000 {
+    A = 1;
+} else {
+    A = 0;
+}
+
+if AMA_8 < AMA_50 * fallscale / 1000  {
+    B = 1;
+} else {
+    B = 0;
+}
+
+if AMA_8 < AMA_144 * fallscale / 1000  {
+    C = 1;
+} else {
+    C = 0;
+}
+
+if AMA_8 < AMA_200 * fallscale / 1000 {
+    D = 1;
+} else {
+    D = 0;
+}
+def E = A + B + C + D;
+def Buying    = 1;
+def Hold      = 2;
+def LockSell  = 3;
+def selling   = 4;
+def Watch     = 5;
+def LockBuy   = 6;
+
+def currentprice = close;
+def buyprice;
+def OrderStatux;
+
+def StopLossPrice = if OrderStatux[1] == Buying then open[-1]*StopLossRate/100 else StopLossPrice[1];
+def TrendDnSum = fold index = 1 to TrendLen with p = 0 do p + Trenddn[index];
+def FLDx =  ((AbsValue(AMA_350-AMA_200)+AbsValue(AMA_350-AMA_144)+AbsValue(AMA_144-AMA_200))/(AMA_144+AMA_200+AMA_350));
+def buycondition1 = Trendup;
+def buycondition= AMA_8 > AMA_21  * raisescale / 1000
+               and AMA_8 > AMA_50  * raisescale / 1000
+               and AMA_8 > AMA_144 * raisescale / 1000
+               and AMA_8 > AMA_200 * raisescale / 1000
+               and AMA_8 > AMA_350 * raisescale / 1000
+               and TrendDnSum>TrendDnRatio*TrendLen/100
+               and FLDx<=ClosureRatio;
+
+AddChartBubble(FLDx<=ClosureRatio , low[1], "FLDx:"+FLDx,color.red); 
+def sellcondition = E >= Elimit or RSI > 75;
+def SellByRSI = if RSI > 75 then  Yes else  No;
+def ReachRelease =  if  ((OrderStatux[1] == selling)  and (SellByRSI[1] is  True)) then 0 else ReachRelease[1]+1;
+buyprice = if OrderStatux[1] == buying then open else buyprice[1];
+
+def init = open == first(open) 
+      and close == first(close)
+      and high  == first(high)
+      and low   == first(low);
+
+def OrderStatus    =     if  ((OrderStatus[1] == Watch)    and (buycondition  is true))        then Buying       #观望转购买
+                    else if  ((OrderStatus[1] == hold)     and (currentprice <  buyprice))     then LockSell     #持仓转锁售
+                    else if  ((OrderStatus[1] == hold)     and (sellcondition is  True))       then selling      #持仓转清仓
+                    else if  ((OrderStatus[1] == selling)  and (SellByRSI[1] is  True))        then Lockbuy      #锁售转持仓
+                    else if   (OrderStatus[1] == selling)                                      then watch        #锁售转卖出
+                    else if   (OrderStatus[1] == buying)                                       then hold         #卖出转观望
+                    else if  ((OrderStatus[1] == lockbuy)  and (ReachRelease >lockbuylen))     then watch        #卖出转锁买
+                    else if  ((OrderStatus[1] == locksell) and (Currentprice < StopLossPrice)) then selling      #锁买转观望
+                    else if  ((OrderStatus[1] == locksell) and (Currentprice > buyprice))      then hold         #锁买转观望
+                    else if  init                                                              then watch
+                    else      OrderStatus[1] ;
+
+OrderStatux = OrderStatus; 
+
+
+
+AddChartBubble(init , low[1], "init",color.red); 
+AddChartBubble(OrderStatus[1]!=OrderStatus[2], open, if OrderStatus[1] ==  Buying then "Buying:"+TrendDnSum
+                                               else if OrderStatus[1] ==  Hold then "Hold" 
+                                               else if OrderStatus[1] ==  LockSell then "LockSell" 
+                                               else if OrderStatus[1] ==  selling then "selling" 
+                                               else if OrderStatus[1] ==  Watch then "Watch" 
+                                               else if OrderStatus[1] ==  LockBuy then "LockBuy" 
+                                               else "OrderStatus"+OrderStatus[1],Color.Green );
+
+
+#AddChartBubble(yes, low[1], "buycondition=" + buycondition, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "currentprice=" + currentprice, Color.DARK_GRAY);
+##AddChartBubble(yes, low[1], "buyprice=" + buyprice, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "sellcondition=" + sellcondition, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "SellByRSI[1]=" + SellByRSI[1], Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "ReachRelease=" + ReachRelease, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "StopLossPrice=" + StopLossPrice, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "OrderStatus=" + OrderStatus, Color.DARK_GRAY);
+#AddChartBubble(yes, low[1], "OrderStatus[1]=" + OrderStatus[1], Color.DARK_GRAY);
+
+
+#    AddChartBubble(yes, low[1], "8="+AMA_8, color.Dark_Gray);
+#    AddChartBubble(yes, low[1], "21="+AMA_21, color.Dark_Gray);
+#    AddChartBubble(yes, low[1], "50="+AMA_50, color.Dark_Gray);
+#    AddChartBubble(yes, low[1], "144="+AMA_144, color.Dark_Gray);
+#    AddChartBubble(yes, low[1], "200="+AMA_200, color.Dark_Gray);
+AddOrder(type = OrderType.BUY_TO_OPEN, condition = (OrderStatus == Buying), tickColor = GetColor(3), arrowColor = GetColor(3), name = "AMA_LE");
+AddOrder(type = OrderType.SELL_TO_CLOSE, condition =  (OrderStatus == selling), tickcolor = GetColor(4), arrowcolor = GetColor(4), name = "AMA_SX");

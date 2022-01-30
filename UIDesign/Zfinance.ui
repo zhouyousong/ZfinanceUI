@@ -608,7 +608,7 @@
     <widget class="QPushButton" name="StartSortingAnalyse_2">
      <property name="geometry">
       <rect>
-       <x>340</x>
+       <x>370</x>
        <y>20</y>
        <width>81</width>
        <height>31</height>
@@ -621,7 +621,7 @@
     <widget class="QPushButton" name="StartSortingAnalyse_3">
      <property name="geometry">
       <rect>
-       <x>250</x>
+       <x>280</x>
        <y>20</y>
        <width>81</width>
        <height>31</height>
@@ -635,9 +635,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>100</y>
        <width>441</width>
-       <height>241</height>
+       <height>201</height>
       </rect>
      </property>
     </widget>
@@ -646,25 +646,51 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>81</width>
+       <width>91</width>
        <height>31</height>
       </rect>
      </property>
      <property name="text">
-      <string>回测参数</string>
+      <string>设置参数</string>
      </property>
     </widget>
     <widget class="QPushButton" name="StartBackTesting">
      <property name="geometry">
       <rect>
-       <x>100</x>
+       <x>110</x>
        <y>20</y>
        <width>81</width>
        <height>31</height>
       </rect>
      </property>
      <property name="text">
-      <string>开始回测</string>
+      <string>开始单测试</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="OpenGroupBackTestParas">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>60</y>
+       <width>91</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>打开组参数</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="StartGroupBackTestings">
+     <property name="geometry">
+      <rect>
+       <x>110</x>
+       <y>60</y>
+       <width>81</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>开始组测试</string>
      </property>
     </widget>
    </widget>
@@ -737,7 +763,7 @@
      <x>0</x>
      <y>0</y>
      <width>1916</width>
-     <height>26</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu67">

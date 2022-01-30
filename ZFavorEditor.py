@@ -4,10 +4,10 @@ import ZBaseFunc
 
 from PySide2.QtUiTools  import QUiLoader
 from PySide2.QtCore import *
+from PySide2.QtGui import *
 from PySide2.QtWidgets import *
-from PySide2 import QtCore
 
-def LoadFavorListCfg(FavorList = QTreeWidget,CheckBox = False):
+def LoadFavorListCfg(FavorList = QTreeWidget,CheckBox = None):
 
     FavorList.setColumnCount(2)
     FavorList.setHeaderLabels(('SYMBOL', 'POSITION', 'COMMENT'))
@@ -30,6 +30,8 @@ def LoadFavorListCfg(FavorList = QTreeWidget,CheckBox = False):
         root.setText(0, FLGroup)
         if CheckBox:
             root.setCheckState(0, Qt.Checked)
+        elif CheckBox == False:
+            root.setCheckState(0, Qt.Unchecked)
         for i in FLSymbol:
             child = QTreeWidgetItem(root)
             child.setText(0, i[0])
@@ -51,6 +53,66 @@ class FavorEditorUIProc:
         self.FavorEditorUI.FavorList.itemDoubleClicked.connect(self.HandleFavorListDelete)
         self.FavorEditorUI.Save.clicked.connect(self.HandleSaveFavorList)
         self.FavorEditorUI.AddAll.clicked.connect(self.HandleAddAll)
+
+        self.FavorEditorUI.FavorList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.FavorEditorUI.FavorList.customContextMenuRequested[QPoint].connect(self.FavorListChechboxSelectMenu)
+
+    def FavorListChechboxSelectMenu(self):
+        popMenu = QMenu()
+        if self.FavorEditorUI.FavorList.currentItem().parent() == None:
+            Move2BlackList  = popMenu.addAction("移入黑名单")
+            Move2DefaultList  = popMenu.addAction('移入默认')
+
+            Move2BlackList.triggered.connect(self.MoveSelectedList2BlackList)
+            Move2DefaultList.triggered.connect(self.MoveSelectedList2DefaultList)
+        popMenu.exec_(QCursor.pos())
+        return
+
+    def MoveSelectedList2BlackList(self):
+
+        cursor = QTreeWidgetItemIterator(self.FavorEditorUI.FavorList.currentItem())
+        ChildCnt = cursor.value().childCount()
+        cursor = cursor.__iadd__(1)
+        TempMoveList = []
+        for i in range(ChildCnt):
+            TempMoveList.append(cursor.value().text(0))
+            cursor = cursor.__iadd__(1)
+        print(TempMoveList)
+
+        cursor = QTreeWidgetItemIterator(self.FavorEditorUI.FavorList)
+        while cursor.value():
+            Temp = cursor.value()
+            if(Temp.text(0) =='BLACKLIST'):
+                break
+            cursor = cursor.__iadd__(1)
+
+        ChildCnt= Temp.childCount()
+        cursor = cursor.__iadd__(1)
+        BlackListSymbols = []
+        for i in range(ChildCnt):
+            BlackListSymbols.append(cursor.value().text(0))
+            cursor = cursor.__iadd__(1)
+        MoveList = []
+        for one in TempMoveList:
+            if one not in BlackListSymbols:
+                MoveList.append(one)
+
+        for Symbol in MoveList:
+            child = QTreeWidgetItem()
+            child.setText(0, Symbol)
+            child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable)
+            Temp.addChild(child)
+
+
+
+
+
+
+        return
+
+    def MoveSelectedList2DefaultList(self):
+
+        return
 
     def handleFavorEditor(self,SelectList=[],NewClass=''):
 

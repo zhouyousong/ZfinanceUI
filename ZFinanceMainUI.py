@@ -27,7 +27,7 @@ FavorEditorUI = ZFavorEditor.FavorEditorUIProc()
 ZBaseFunc.InitLogBox(GlobalMainUI)
 
 DownloadUI          = ZfinanceUI_Download.DownloadUIProc(GlobalMainUI,app,FavorEditorUI)
-#FunAnaUI            = ZFunAna.FunAnaProc(GlobalMainUI,app)
+FunAnaUI            = ZFunAna.FunAnaProc(GlobalMainUI,app)
 BackTestAndMonitorUI    = ZBackTestAndMonitor.BackTestAndMonitorProc(GlobalMainUI,app)
 
 
