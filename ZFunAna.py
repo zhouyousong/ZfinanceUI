@@ -81,7 +81,7 @@ class FunAnaProc:
 
         self.GlobalMainUI.IntelRecom.clicked.connect(self.HandleIntelligentRecommendation)
 
-        Temp= pd.read_csv('Data\\03_IntermediateData\TickersInfo.csv',sep=',',index_col='symbol')
+        Temp= pd.read_csv('Data\\03_IntermediateData\TickersInfo.csv',sep=',',index_col='symbol',low_memory=False)
         InfoDataBase = Temp[~numpy.isnan(Temp['sharesOutstanding'])]
         ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
         self.ValueRatioPreviewFlag = True

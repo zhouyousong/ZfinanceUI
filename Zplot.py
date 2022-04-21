@@ -204,7 +204,6 @@ def ZBar3D(PlotItem = dict()):
 def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,ActionList,
                FlPL,StdPL,FixPL,SP500PL,BackTestDict,TempFolderPath ):
 
-    ZBaseFunc.Log2LogBox("Start <DrawCharts> Function")
     AEMATP = [
         BackTestDict['AEMATP']['Length1'],
         BackTestDict['AEMATP']['Length2'],
@@ -368,7 +367,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,Actio
     RegularRSI  = ['-' for i in range(RSIDataLen)]
     OverBuyRSI  = ['-' for i in range(RSIDataLen)]
     flag = 0
-    ZBaseFunc.Log2LogBox("start OverBuy and OverSell calc")
+
     for i in range(RSIDataLen):
         if RSIDataList[0][i] > OverBuyValue:
             OverBuyRSI[i] = RSIDataList[0][i]
@@ -385,7 +384,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,Actio
             if flag == 0:
                 OverSellRSI[i-1] = RSIDataList[0][i-1]
             flag = -1
-    ZBaseFunc.Log2LogBox("End OverBuy and OverSell calc")
+
     ################################################################
     RSIline = (
         Line()
@@ -585,21 +584,21 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,Actio
             pos_left="4%", pos_right="8%", pos_top="82%", height="12%"
         ),
     )
-    ZBaseFunc.Log2LogBox("Draw Finished")
+
     if BackTestDict['WebPage']['Save']:
         grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
-        ZBaseFunc.Log2LogBox("Generated html")
+
         if BackTestDict['WebPage']['AutoOpen']:
             webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
-            ZBaseFunc.Log2LogBox("Opened html")
+
     else:
         if BackTestDict['WebPage']['AutoOpen']:
             grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
-            ZBaseFunc.Log2LogBox("Generated html")
+
             webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
-            ZBaseFunc.Log2LogBox("Opened html")
+
             time.sleep(3)
             os.remove(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
-            ZBaseFunc.Log2LogBox("Deleted html")
+
 
 

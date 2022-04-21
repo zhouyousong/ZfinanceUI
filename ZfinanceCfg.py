@@ -42,6 +42,9 @@ DebugStatusStr = {
 }
 
 BackTestPara = {
+                    "ProcessConfig": {
+                        "ProcessorCnt": 4,
+                    },
                     "BackTestDayCount": {
                         "Length": int(180),
                     },

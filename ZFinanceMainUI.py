@@ -1,3 +1,5 @@
+import multiprocessing
+
 from PySide2.QtWidgets import QApplication, QMessageBox,QFileDialog
 from PySide2.QtUiTools import QUiLoader
 import ZfinanceUI_Download
@@ -15,21 +17,22 @@ class Stats:
 
         self.MainUI = QUiLoader().load('UIDesign\Zfinance.ui')
 
+if __name__ == '__main__':
 
-ZTimer = Zfinance.Logtime("Start")
-app = QApplication([])
-ZTimer.Dtime('app')
-stats = Stats()
-ZTimer.Dtime('stats')
-GlobalMainUI = stats.MainUI
-stats.MainUI.show()
-FavorEditorUI = ZFavorEditor.FavorEditorUIProc()
-ZBaseFunc.InitLogBox(GlobalMainUI)
+    ZTimer = Zfinance.Logtime("Start")
+    app = QApplication([])
+    ZTimer.Dtime('app')
+    stats = Stats()
+    ZTimer.Dtime('stats')
+    GlobalMainUI = stats.MainUI
+    stats.MainUI.show()
+    FavorEditorUI = ZFavorEditor.FavorEditorUIProc()
+    ZBaseFunc.InitLogBox(GlobalMainUI)
 
-DownloadUI          = ZfinanceUI_Download.DownloadUIProc(GlobalMainUI,app,FavorEditorUI)
-FunAnaUI            = ZFunAna.FunAnaProc(GlobalMainUI,app)
-BackTestAndMonitorUI    = ZBackTestAndMonitor.BackTestAndMonitorProc(GlobalMainUI,app)
+    DownloadUI          = ZfinanceUI_Download.DownloadUIProc(GlobalMainUI,app,FavorEditorUI)
+    FunAnaUI            = ZFunAna.FunAnaProc(GlobalMainUI,app)
+    BackTestAndMonitorUI    = ZBackTestAndMonitor.BackTestAndMonitorProc(GlobalMainUI,app)
 
 
 
-app.exec_()
+    app.exec_()

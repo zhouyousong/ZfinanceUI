@@ -32,6 +32,7 @@ def Log2LogBox(string =''):
     DeltaTime   = NowTime - StartTime
     StartTime = NowTime
     GlobalMainUI.LogBox.append(NowTimeStr+'|'+str(DeltaTime)+'ms|'+string)
+    GlobalMainUI.LogBox.verticalScrollBar().setValue(GlobalMainUI.LogBox.verticalScrollBar().maximum())
 
 InfoBuffer = None
 
