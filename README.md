@@ -41,12 +41,24 @@
 我是用pycharm的，所以我也并没有验证过纯python的环境运行如何  
 我是用python3.9的解释器，库的安装如下  
 Install below  
-pip install yfinance==0.1.62  （一定要这个版本）  
+pip install yfinance==0.1.62  （一定要这个版本） 
+![图片](https://user-images.githubusercontent.com/88005595/164975122-02acbd23-3b51-403d-b67d-c37e613d9314.png)
+
 pip install keyboard  
 pip install pyecharts  
+![图片](https://user-images.githubusercontent.com/88005595/164975109-16e45c07-75e1-4cd4-a9c4-c667f375e839.png)
+
 pip install plotly  
+pip install PySide2  
+![图片](https://user-images.githubusercontent.com/88005595/164975137-c816fbba-8d93-4283-a4d6-5480a801f6bd.png)
+
+pip install pyqt5  
+![图片](https://user-images.githubusercontent.com/88005595/164975150-225362af-ebfb-4590-9f26-d3e9e47721c4.png)
+
 另外TA_lib 似乎不能在线安装，所以我已经上传离线安装包了  
-pip install .\misc\TA_Lib-0.4.20-cp38-cp38-win_amd64.whl  
+pip install .\misc\TA_Lib-0.4.21-cp39-cp39-win_amd64.whl  
+![图片](https://user-images.githubusercontent.com/88005595/164975132-59369293-0ff8-4635-ba04-e7b0214a846b.png)
+
 注意几个问题  
 yahoo财经去年（2021年）退出中国，所以必须vpn代理才能访问  
 
