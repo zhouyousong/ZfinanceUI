@@ -33,18 +33,18 @@
 ![图片](https://user-images.githubusercontent.com/88005595/164954737-3e6e771a-3cbc-448c-8c85-bf44751e1970.png)
 ![图片](https://user-images.githubusercontent.com/88005595/164954732-88898728-b52e-40b4-ba60-1ee458917202.png)
 
-安装方法
-我是用pycharm的，所以我也并没有验证过纯python的环境运行如何
-我是用python3.9的解释器，库的安装如下
+安装方法  
+我是用pycharm的，所以我也并没有验证过纯python的环境运行如何  
+我是用python3.9的解释器，库的安装如下  
 Install below  
-pip install yfinance==0.1.62  （一定要这个版本）
+pip install yfinance==0.1.62  （一定要这个版本）  
 pip install keyboard  
 pip install pyecharts  
 pip install plotly  
-另外TA_lib 似乎不能在线安装，所以我已经上传离线安装包了
+另外TA_lib 似乎不能在线安装，所以我已经上传离线安装包了  
 pip install .\misc\TA_Lib-0.4.20-cp38-cp38-win_amd64.whl  
-注意几个问题
-yahoo财经去年（2021年）退出中国，所以必须vpn代理才能访问
+注意几个问题  
+yahoo财经去年（2021年）退出中国，所以必须vpn代理才能访问  
 
-使用方法慢慢编写释放，欢迎大家一起参与，
-如果想加群可添加我wx：zhou-yousong
+使用方法慢慢编写释放，欢迎大家一起参与  
+如果想加群可添加我wx：zhou-yousong  
