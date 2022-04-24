@@ -32,6 +32,9 @@
 ![图片](https://user-images.githubusercontent.com/88005595/164954721-3acab923-c739-421f-8af0-11d9a3ebfa2e.png)
 ![图片](https://user-images.githubusercontent.com/88005595/164954737-3e6e771a-3cbc-448c-8c85-bf44751e1970.png)
 ![图片](https://user-images.githubusercontent.com/88005595/164954732-88898728-b52e-40b4-ba60-1ee458917202.png)
+回测的效果图  
+![图片](https://user-images.githubusercontent.com/88005595/164957423-ac222ef5-1fd2-4dfc-aa15-c865bf739a29.png)
+
 
 安装方法  
 我是用pycharm的，所以我也并没有验证过纯python的环境运行如何  
