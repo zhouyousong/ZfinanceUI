@@ -263,7 +263,10 @@ class DownloadUIProc:
         CfgDict['MulitThreadDL_x']  = int(self.DownloadCfgUI.MulitThreadDL.currentText())
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
+
         CfgDict['ProxyEnable_x']      = self.DownloadCfgUI.ProxyEnable.isChecked()
+        CfgDict['ProxyIP_x']        = self.DownloadCfgUI.ProxyIP.text()
+        CfgDict['ProxyPort_x']      = self.DownloadCfgUI.ProxyPort.text()
 
         CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
         CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentIndex())
