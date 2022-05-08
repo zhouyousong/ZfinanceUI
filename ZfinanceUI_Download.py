@@ -10,7 +10,7 @@ import datetime
 from ftplib import FTP
 import pandas
 import pandas as pd
-import yfinance
+import yfinance,efinance
 import glob
 
 import ZBaseFunc
@@ -20,6 +20,7 @@ from ZfinanceCfg import TableColor
 import ZFavorEditor
 import ZDataClean
 from time import sleep
+import pathlib
 import time
 
 import PySide2.QtWidgets ,PySide2.QtWidgets ,PySide2.QtGui
@@ -63,7 +64,7 @@ class DownloadUIProc:
         self.GlobalMainUI = GlobalUI
         GlobalAPP = APP
         GlobalMainUI = GlobalUI
-        self.DownloadCfgUI = QUiLoader().load('UIDesign\DownloadConfig.ui')
+        self.DownloadCfgUI = QUiLoader().load('UIDesign/DownloadConfig.ui')
 
 
         self.DataCleanUIx = ZDataClean.DataCleanUIProc(GlobalAPP)
@@ -150,35 +151,67 @@ class DownloadUIProc:
     def HandleUpdateTickerList(self):
 
         global GlobalAPP
-
         self.DownloadCfgUI.SymbolsListProgressBar.setValue(0)
-        self.DownloadCfgUI.UpdateTickerList.setDisabled(True)
-        GlobalAPP.processEvents()
-        ftp = FTP()
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(10)
-        ftp.connect(host='ftp.nasdaqtrader.com', port=21, timeout=10)
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(20)
-        ftp.login(user=None, passwd=None)
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(40)
-        fNasdaq = open('Data/00_Config/NasdaqTickerList.csv', 'wb')
-        fNYSEAMEX = open('Data/00_Config/NyseAmexTickerList.csv', 'wb')
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(50)
-        ftp.cwd('/Symboldirectory/')
+        US = efinance.stock.get_realtime_quotes("美股")
+        self.DownloadCfgUI.SymbolsListProgressBar.setValue(30)
+        HK = efinance.stock.get_realtime_quotes("港股")
         self.DownloadCfgUI.SymbolsListProgressBar.setValue(60)
-        ftp.retrbinary('RETR nasdaqlisted.txt', fNasdaq.write)
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(70)
-        ftp.retrbinary('RETR otherlisted.txt', fNYSEAMEX.write)
-        self.DownloadCfgUI.SymbolsListProgressBar.setValue(80)
-        fNasdaq.close()
+        CN = efinance.stock.get_realtime_quotes("沪深A股")
         self.DownloadCfgUI.SymbolsListProgressBar.setValue(90)
-        fNYSEAMEX.close()
+
+        US = US[~US['总市值'].isin(["-"])]
+        HK = HK[~HK['总市值'].isin(["-"])]
+        CN = CN[~CN['总市值'].isin(["-"])]
+
+        US.to_csv("Data/00_Config/USTickerList.csv")
+        HK.to_csv("Data/00_Config/HKTickerList.csv")
+        CN.to_csv("Data/00_Config/CNTickerList.csv")
         self.DownloadCfgUI.SymbolsListProgressBar.setValue(100)
-        self.DownloadCfgUI.UpdateTickerList.setDisabled(False)
+
+        #
+        #
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(0)
+        # self.DownloadCfgUI.UpdateTickerList.setDisabled(True)
+        # GlobalAPP.processEvents()
+        # ftp = FTP()
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(10)
+        # ftp.connect(host='ftp.nasdaqtrader.com', port=21, timeout=10)
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(20)
+        # ftp.login(user=None, passwd=None)
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(40)
+        # fNasdaq = open('Data/00_Config/NasdaqTickerList.csv', 'wb')
+        # fNYSEAMEX = open('Data/00_Config/NyseAmexTickerList.csv', 'wb')
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(50)
+        # ftp.cwd('/Symboldirectory/')
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(60)
+        # ftp.retrbinary('RETR nasdaqlisted.txt', fNasdaq.write)
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(70)
+        # ftp.retrbinary('RETR otherlisted.txt', fNYSEAMEX.write)
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(80)
+        # fNasdaq.close()
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(90)
+        # fNYSEAMEX.close()
+        # self.DownloadCfgUI.SymbolsListProgressBar.setValue(100)
+        # self.DownloadCfgUI.UpdateTickerList.setDisabled(False)
 
     def HandleDownloadPeriod(self):
         DownloadPeriod_x = ZfinanceCfg.PeriodDict['PeriodStrPara'][self.DownloadCfgUI.DownloadPeriod.value()]
         self.DownloadCfgUI.ShowPeriod.setText(ZfinanceCfg.PeriodDict['PeriodStr'][self.DownloadCfgUI.DownloadPeriod.value()])
       #  QLabel.setText()
+
+    def LoadSelectMarket(self,SelectList):
+        SelectList.setColumnCount(2)
+        SelectList.setHeaderLabels(('Market', 'Comment', 'Rule'))
+
+        for Key, Value in ZfinanceCfg.ExchargeMarket.items():
+            root = QTreeWidgetItem(SelectList)
+            root.setText(0, Key)
+            root.setText(1, Value[0])
+            root.setText(2, Value[1])
+            root.setCheckState(0, Qt.Unchecked)
+        SelectList.addTopLevelItem(root)
+        SelectList.setCurrentItem((SelectList.topLevelItem(0)))
+
     def HandleDownloadConfig(self):
         ZFavorEditor.LoadFavorListCfg(self.DownloadCfgUI.FavorList, CheckBox=True)
 
@@ -195,19 +228,19 @@ class DownloadUIProc:
             self.HandleOpenDLConfig(Default=True)
             self.DLUIInit = True
 
+
+
     def HandleConfirmDownload(self):
 
-        CfgDict['EX_NASDAQGSM_x'] = self.DownloadCfgUI.NASDAQGSM.isChecked()
-        CfgDict['EX_NASDAQGM_x']  = self.DownloadCfgUI.NASDAQGM.isChecked()
-        CfgDict['EX_NASDAQCM_x']  = self.DownloadCfgUI.NASDAQCM.isChecked()
-
-        CfgDict['EX_NYSEMKT_x'] = self.DownloadCfgUI.NYSEMKT.isChecked()
-        CfgDict['EX_NYSE_x']  = self.DownloadCfgUI.NYSE.isChecked()
-        CfgDict['EX_NYSEARCA_x']  = self.DownloadCfgUI.NYSEARCA.isChecked()
-        CfgDict['EX_BATS_x'] = self.DownloadCfgUI.BATS.isChecked()
-        CfgDict['EX_IEXG_x']  = self.DownloadCfgUI.IEXG.isChecked()
-
-        CfgDict['List_Favor_x']  = self.DownloadCfgUI.List_Favor.isChecked()
+        cursor = QTreeWidgetItemIterator(self.DownloadCfgUI.MarketSelector)     ##########刷新选择菜单
+        while cursor.value():
+            Temp = cursor.value()
+            if Temp.checkState(0):
+                CfgDict['EX_'+Temp.text(0)+'_x'] = True
+            else:
+                CfgDict['EX_' + Temp.text(0) + '_x'] = False
+            cursor = cursor.__iadd__(1)
+        CfgDict['List_Favor_x']  = CfgDict['EX_FAVOR_x']
 
         CfgDict['Intervial_1Day_x']     = self.DownloadCfgUI.Intervial_1Day.isChecked()
         CfgDict['Intervial_1h_x']       = self.DownloadCfgUI.Intervial_1h.isChecked()
@@ -230,7 +263,7 @@ class DownloadUIProc:
         CfgDict['MulitThreadDL_x']  = int(self.DownloadCfgUI.MulitThreadDL.currentText())
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
-        CfgDict['VPNEnable_x']      = self.DownloadCfgUI.VPNEnable.isChecked()
+        CfgDict['ProxyEnable_x']      = self.DownloadCfgUI.ProxyEnable.isChecked()
 
         CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
         CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentIndex())
@@ -239,17 +272,17 @@ class DownloadUIProc:
 
     def HandleSaveDLConfig(self):
 
-        CfgDict['EX_NASDAQGSM_x'] = self.DownloadCfgUI.NASDAQGSM.isChecked()
-        CfgDict['EX_NASDAQGM_x']  = self.DownloadCfgUI.NASDAQGM.isChecked()
-        CfgDict['EX_NASDAQCM_x']  = self.DownloadCfgUI.NASDAQCM.isChecked()
 
-        CfgDict['EX_NYSEMKT_x'] = self.DownloadCfgUI.NYSEMKT.isChecked()
-        CfgDict['EX_NYSE_x']  = self.DownloadCfgUI.NYSE.isChecked()
-        CfgDict['EX_NYSEARCA_x']  = self.DownloadCfgUI.NYSEARCA.isChecked()
-        CfgDict['EX_BATS_x'] = self.DownloadCfgUI.BATS.isChecked()
-        CfgDict['EX_IEXG_x']  = self.DownloadCfgUI.IEXG.isChecked()
+        cursor = QTreeWidgetItemIterator(self.DownloadCfgUI.MarketSelector)
+        while cursor.value():
+            Temp = cursor.value()
+            if Temp.checkState(0):
+                CfgDict['EX_'+Temp.text(0)+'_x'] = True
+            else:
+                CfgDict['EX_' + Temp.text(0) + '_x'] = False
+            cursor = cursor.__iadd__(1)
 
-        CfgDict['List_Favor_x']  = self.DownloadCfgUI.List_Favor.isChecked()
+        CfgDict['List_Favor_x']  = CfgDict['EX_FAVOR_x']
 
         CfgDict['Intervial_1Day_x']  = self.DownloadCfgUI.Intervial_1Day.isChecked()
         CfgDict['Intervial_1h_x']  = self.DownloadCfgUI.Intervial_1h.isChecked()
@@ -271,7 +304,9 @@ class DownloadUIProc:
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
 
-        CfgDict['VPNEnable_x']      = self.DownloadCfgUI.VPNEnable.isChecked()
+        CfgDict['ProxyEnable_x']      = self.DownloadCfgUI.ProxyEnable.isChecked()
+        CfgDict['ProxyIP_x']        = self.DownloadCfgUI.ProxyIP.text()
+        CfgDict['ProxyPort_x']      = self.DownloadCfgUI.ProxyPort.text()
 
         CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentText())
         CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
@@ -289,6 +324,19 @@ class DownloadUIProc:
         if Default:
             ConfigFilePathName = 'Data/00_Config/Default.ZFCfg'
             if(not os.path.exists(ConfigFilePathName)):
+
+                self.DownloadCfgUI.MarketSelector.setColumnCount(2)
+                self.DownloadCfgUI.MarketSelector.setHeaderLabels(('Market', 'Comment', 'Rule'))
+
+                for Key, Value in ZfinanceCfg.ExchargeMarket.items():
+                    root = QTreeWidgetItem(self.DownloadCfgUI.MarketSelector)
+                    root.setText(0, Key)
+                    root.setText(1, Value[0])
+                    root.setText(2, Value[1])
+                    root.setCheckState(0, Qt.Unchecked)
+                self.DownloadCfgUI.MarketSelector.addTopLevelItem(root)
+                self.DownloadCfgUI.MarketSelector.setCurrentItem((self.DownloadCfgUI.MarketSelector.topLevelItem(0)))
+
                 return
         else:
             ConfigFilePathName ,ok= QFileDialog.getOpenFileName(None, "选择配置文件",'Data/00_Config','ZfinanceCfg (*.ZFCfg)')
@@ -298,17 +346,6 @@ class DownloadUIProc:
         with open(ConfigFilePathName, 'r') as load_f:
             CfgDict = json.load(load_f)
         try:
-            self.DownloadCfgUI.NASDAQGSM.setChecked(CfgDict['EX_NASDAQGSM_x'])
-            self.DownloadCfgUI.NASDAQGM.setChecked(CfgDict['EX_NASDAQGM_x'])
-            self.DownloadCfgUI.NASDAQCM.setChecked(CfgDict['EX_NASDAQCM_x'])
-
-            self.DownloadCfgUI.NYSEMKT.setChecked(CfgDict['EX_NYSEMKT_x'])
-            self.DownloadCfgUI.NYSE.setChecked(CfgDict['EX_NYSE_x'])
-            self.DownloadCfgUI.NYSEARCA.setChecked(CfgDict['EX_NYSEARCA_x'])
-            self.DownloadCfgUI.BATS.setChecked(CfgDict['EX_BATS_x'])
-            self.DownloadCfgUI.IEXG.setChecked(CfgDict['EX_IEXG_x'])
-
-            self.DownloadCfgUI.List_Favor.setChecked(CfgDict['List_Favor_x'])
 
             self.DownloadCfgUI.Intervial_1Day.setChecked(CfgDict['Intervial_1Day_x'])
             self.DownloadCfgUI.Intervial_1h.setChecked(CfgDict['Intervial_1h_x'])
@@ -330,10 +367,30 @@ class DownloadUIProc:
             self.DownloadCfgUI.ReConnect.setCurrentIndex(ZfinanceCfg.ReConnectList_c.index(str(CfgDict['ReConnectCnt_x'])))
             self.DownloadCfgUI.TimeOut.setCurrentIndex(ZfinanceCfg.TimeOutList_c.index(str(CfgDict['TimeOut_x'])))
 
-            self.DownloadCfgUI.VPNEnable.setChecked(CfgDict['VPNEnable_x'])
+            self.DownloadCfgUI.ProxyEnable.setChecked(CfgDict['ProxyEnable_x'])
+            self.DownloadCfgUI.ProxyIP.setText(CfgDict['ProxyIP_x'])
+            self.DownloadCfgUI.ProxyPort.setText(CfgDict['ProxyPort_x'])
 
             self.DownloadCfgUI.SkipPeriod.setCurrentIndex(ZfinanceCfg.SkipPeriodList_c.index(str(CfgDict['SkipPeriod_x'])))
             self.DownloadCfgUI.SkipNG.setChecked(CfgDict['SkipNG_x'])
+
+
+            self.DownloadCfgUI.MarketSelector.setColumnCount(2)
+            self.DownloadCfgUI.MarketSelector.setHeaderLabels(('Market', 'Comment', 'Rule'))
+
+            for Key, Value in ZfinanceCfg.ExchargeMarket.items():
+                root = QTreeWidgetItem(self.DownloadCfgUI.MarketSelector)
+                root.setText(0, Key)
+                root.setText(1, Value[0])
+                root.setText(2, Value[1])
+                if CfgDict['EX_'+Key+'_x']:
+                    root.setCheckState(0, Qt.Checked)
+                else:
+                    root.setCheckState(0, Qt.Unchecked)
+            self.DownloadCfgUI.MarketSelector.addTopLevelItem(root)
+            self.DownloadCfgUI.MarketSelector.setCurrentItem((self.DownloadCfgUI.MarketSelector.topLevelItem(0)))
+
+
         except:
             pass
         print(ConfigFilePathName)
@@ -367,6 +424,11 @@ def HandleDownloadStart():
     FunAnaList = []
     GlobalMainUI.SymbolsDownloadStart.setDisabled(True)
     GlobalAPP.processEvents()
+
+    if  CfgDict == dict():
+        ConfigFilePathName = 'Data/00_Config/Default.ZFCfg'
+        with open(ConfigFilePathName, 'r') as load_f:
+            CfgDict = json.load(load_f)
 
     DownloadPeriod = CfgDict['DownloadPeriod_x']
     Period2Days = ZfinanceCfg.PeriodDict['Period2Days'][ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod)]
@@ -416,40 +478,54 @@ def HandleDownloadStart():
 
     ReConnectCnt = CfgDict['ReConnectCnt_x']
 
-    if CfgDict['VPNEnable_x']:
+    if CfgDict['ProxyEnable_x']:
         VPN = ZfinanceCfg.PROXYEN
+        VPN = 'http://'+CfgDict['ProxyIP_x']+':'+CfgDict['ProxyPort_x']
     else:
         VPN = None
     #http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs
 
-    SymbolsList = []
-    NasdaqTickerList = pd.read_csv('Data\\00_Config\\NasdaqTickerList.csv',sep='|')
-    NyseAmexTickerList = pd.read_csv('Data\\00_Config\\NyseAmexTickerList.csv', sep='|')
-    if CfgDict['EX_NASDAQGSM_x']:
-        Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['Q'])]
-        SymbolsList.extend(Temp['Symbol'].tolist())
-    if CfgDict['EX_NASDAQGM_x']:
-        Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['G'])]
-        SymbolsList.extend(Temp['Symbol'].tolist())
-    if CfgDict['EX_NASDAQCM_x']:
-        Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['S'])]
-        SymbolsList.extend(Temp['Symbol'].tolist())
 
-    if CfgDict['EX_NYSEMKT_x']:
-        Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['A'])]
-        SymbolsList.extend(Temp['ACT Symbol'].tolist())
-    if CfgDict['EX_NYSE_x']:
-        Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['N'])]
-        SymbolsList.extend(Temp['ACT Symbol'].tolist())
-    if CfgDict['EX_NYSEARCA_x']:
-        Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['P'])]
-        SymbolsList.extend(Temp['ACT Symbol'].tolist())
-    if CfgDict['EX_BATS_x']:
-        Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['Z'])]
-        SymbolsList.extend(Temp['ACT Symbol'].tolist())
-    if CfgDict['EX_IEXG_x']:
-        Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['V'])]
-        SymbolsList.extend(Temp['ACT Symbol'].tolist())
+    SymbolsList = []
+    CNTickerList = pd.read_csv('Data\\00_Config\\CNTickerList.csv', sep=',',dtype={'股票代码':str})
+    HKTickerList = pd.read_csv('Data\\00_Config\\HKTickerList.csv', sep=',',dtype={'股票代码':str})
+    USTickerList = pd.read_csv('Data\\00_Config\\USTickerList.csv', sep=',',dtype={'股票代码':str})
+
+    if CfgDict['EX_CN-SHH_x']:
+        Temp = CNTickerList.loc[CNTickerList['市场类型'].isin(['沪A'])]
+        SymbolsList.extend([str(i)+ '.ss' for i in Temp['股票代码'].tolist() ])
+
+    if CfgDict['EX_CN-SHZ_x']:
+        Temp = CNTickerList.loc[CNTickerList['市场类型'].isin(['深A'])]
+        SymbolsList.extend([str(i)+'.sz' for i in Temp['股票代码'].tolist() ])
+
+
+    if CfgDict['EX_HK_x']:
+        Temp = HKTickerList['股票代码'].tolist()
+        for i in Temp:
+            if int(i)<10000:
+                SymbolsList.append(i[-4:]+'.hk')
+
+    if CfgDict['EX_US-ASE_x']:
+        Temp = USTickerList['行情ID'].tolist()
+        for i in Temp:
+            sym = i.split('.')
+            if int(sym[0]) == 105:
+                SymbolsList.append(sym[1])
+
+    if CfgDict['EX_US-NYQ_x']:
+        Temp = USTickerList['行情ID'].tolist()
+        for i in Temp:
+            sym = i.split('.')
+            if int(sym[0]) == 106:
+                SymbolsList.append(sym[1])
+
+    if CfgDict['EX_US-NMS_x']:
+        Temp = USTickerList['行情ID'].tolist()
+        for i in Temp:
+            sym = i.split('.')
+            if int(sym[0]) == 107:
+                SymbolsList.append(sym[1])
 
 #############
     if CfgDict['List_Favor_x']:
@@ -503,17 +579,17 @@ def HandleDownloadStart():
         GlobalMainUI.SymbolsDownloadTable.verticalHeader().setVisible(False)
         #GlobalMainUI.SymbolsDownloadTable.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
         GlobalMainUI.SymbolsDownloadTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
-        GlobalMainUI.SymbolsDownloadTable.setFont(QFont('song', 6))
-        GlobalMainUI.SymbolsDownloadTable.horizontalHeader().setFont(QFont('song', 6))
+        GlobalMainUI.SymbolsDownloadTable.setFont(QFont('song', 7))
+        GlobalMainUI.SymbolsDownloadTable.horizontalHeader().setFont(QFont('song', 7))
         GlobalMainUI.SymbolsDownloadTable.verticalScrollBar().setValue(0)
         Row = 0
         for i in SymbolsList:
             SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
-            GlobalMainUI.SymbolsDownloadTable.setRowHeight(Row, 5)
+            GlobalMainUI.SymbolsDownloadTable.setRowHeight(Row, 6)
             GlobalMainUI.SymbolsDownloadTable.setItem(Row, 0, SymbolsInTable)
             Row = Row+1
 
-        GlobalMainUI.SymbolsDownloadTable.setColumnWidth(0, 40)
+        GlobalMainUI.SymbolsDownloadTable.setColumnWidth(0, 55)
 
         Col = 1
         for i in range(len(IntervialAndPeriodList)+len(FunAnaList)):

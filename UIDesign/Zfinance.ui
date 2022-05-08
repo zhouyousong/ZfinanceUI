@@ -159,7 +159,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>拆分类</string>
+      <string>开始分类</string>
      </property>
     </widget>
     <widget class="QPushButton" name="SaveSortSetting">
@@ -742,12 +742,12 @@
     <property name="title">
      <string>实时监控</string>
     </property>
-    <widget class="QPushButton" name="StartMonitor">
+    <widget class="QPushButton" name="StartMonitorAndTrade">
      <property name="geometry">
       <rect>
-       <x>300</x>
+       <x>90</x>
        <y>20</y>
-       <width>81</width>
+       <width>71</width>
        <height>31</height>
       </rect>
      </property>
@@ -755,22 +755,22 @@
       <string>开始监控</string>
      </property>
     </widget>
-    <widget class="QTableWidget" name="MonitorTable">
+    <widget class="QTableWidget" name="MonitorAndTradeTable">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>10</x>
        <y>60</y>
-       <width>251</width>
-       <height>201</height>
+       <width>271</width>
+       <height>211</height>
       </rect>
      </property>
     </widget>
-    <widget class="QPushButton" name="SetMonitortPara">
+    <widget class="QPushButton" name="SetMonitorAndTradePara">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>10</x>
        <y>20</y>
-       <width>91</width>
+       <width>71</width>
        <height>31</height>
       </rect>
      </property>
@@ -778,50 +778,50 @@
       <string>设置参数</string>
      </property>
     </widget>
-    <widget class="QTableWidget" name="MonitorTable_2">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>60</y>
-       <width>181</width>
-       <height>201</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QLCDNumber" name="lcdNumber">
      <property name="geometry">
       <rect>
-       <x>100</x>
+       <x>380</x>
        <y>20</y>
-       <width>91</width>
+       <width>71</width>
        <height>31</height>
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="BalanceStatus">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>30</y>
+       <x>290</x>
+       <y>20</y>
        <width>51</width>
-       <height>16</height>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
       <string>STATUS</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="MonitorStatus">
      <property name="geometry">
       <rect>
-       <x>390</x>
-       <y>19</y>
+       <x>200</x>
+       <y>20</y>
        <width>71</width>
        <height>31</height>
       </rect>
      </property>
      <property name="text">
       <string>OffLine</string>
+     </property>
+    </widget>
+    <widget class="QTableWidget" name="BalanceTable">
+     <property name="geometry">
+      <rect>
+       <x>290</x>
+       <y>60</y>
+       <width>161</width>
+       <height>211</height>
+      </rect>
      </property>
     </widget>
    </widget>

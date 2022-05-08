@@ -1,8 +1,38 @@
 from enum import Enum
-
+PROXYEN = None
 EXTENDLEN = 100
-PROXYEN   = 'http://127.0.0.1:7890'
-#PROXYEN = None
+DownloadDefualtCfg = {
+    "PROXYEN": 'http://127.0.0.1:7890',
+    'Intervial_1Day_x':True,
+    'Intervial_1h_x':True,
+    'Intervial_30min_x':True,
+    'Intervial_15min_x':True,
+    'Intervial_5min_x':True,
+    'Intervial_1min_x':True,
+
+    'FunAna_Info_x':True,
+    'FunAna_Financials_x':True,
+    'FunAna_Balancesheet_x':True,
+    'FunAna_Cashflow_x':True,
+    'FunAna_Dividends_x':True,
+    'FunAna_Splits_x':True,
+
+    'DownloadPeriod_x' : 10,
+    'MulitThreadDL_x':5,
+    'ReConnectCnt_x':2,
+    'TimeOut_x':10,
+
+    'SkipPeriod_x':0,
+    'SkipNG_x':True,
+
+    "EX_CN-SHZ_x": True,
+    "EX_HK_x": True,
+    "EX_US-ASE_x": True,
+    "EX_US-NYQ_x": True,
+    "EX_US-NMS_x": True,
+    "EX_FAVOR_x": True
+}
+
 PeriodDict={
     'PeriodStr' : ["1 Day", "5 Days", '60 Days', '90 Days', '180 Days', '1 Years',
                  '2 Years', "5 Years", '10 Years' ,'MAX'],
@@ -13,7 +43,7 @@ PeriodDict={
 }
 PreviewPeriodList=[10,20,60,120,240,480,960,1200,2400,-1]
 MulitThreadList_c = ['1','3','5','10','20','40','60','100']
-SkipPeriodList_c = ['No','3','6','9','12','15','18','21']
+SkipPeriodList_c = ['0','3','6','9','12','15','18','21']
 ReConnectList_c = ['1','3','5','10','20']
 TimeOutList_c = ['5','10','20','30','60']
 
@@ -30,7 +60,9 @@ class TrendMode(Enum):
     DN          = 1
     NO          = 2
 
-BMTableColumeItem = ['Start', 'End', 'FlPL', 'StdPL', 'FixPL']
+BackTestTableColumeItem = ['Start', 'End', 'FlPL', 'StdPL', 'FixPL']
+MonitorAndTradeTableColumeItem = ['Mark', 'Status', 'Trade On/Off']
+BalanceTableColumeItem = ['P/L Day', 'P/L Open', 'Cost', 'Mark', 'P/L %', 'Net Liq']
 
 DebugStatusStr = {
                     TradingStatu.Buy:['Buy','green'],
@@ -135,3 +167,13 @@ class TableColor(Enum):
     Green   = 1
     Yellow  = 2
     Red     = 3
+
+ExchargeMarket = {
+            "CN-SHH":["上海证券交易所","沪A"],
+            "CN-SHZ":["深圳证券交易所","深A"],
+            "HK":    ["港交所","9999"],
+            "US-ASE":["美国股票交易所","105"],
+            "US-NYQ":["纽约证券交易所","106"],
+            "US-NMS":["纳斯达克股票交易所","107"],
+            "FAVOR":["收藏清单","NA"]
+          }

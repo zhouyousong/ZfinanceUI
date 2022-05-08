@@ -7,7 +7,9 @@ import Zfinance
 import ZFavorEditor
 import ZBaseFunc
 import ZFunAna
-import ZBackTestAndMonitor
+import ZBackTest
+#import ZMonitorAndTrade
+
 
 SortList=['Sector','Ind','State']
 
@@ -31,8 +33,8 @@ if __name__ == '__main__':
 
     DownloadUI          = ZfinanceUI_Download.DownloadUIProc(GlobalMainUI,app,FavorEditorUI)
     FunAnaUI            = ZFunAna.FunAnaProc(GlobalMainUI,app)
-    BackTestAndMonitorUI    = ZBackTestAndMonitor.BackTestAndMonitorProc(GlobalMainUI,app)
-
+    BackTestUI          = ZBackTest.BackTestProc(GlobalMainUI,app)
+#    MonitorAndTradeUI   = ZMonitorAndTrade.MonitorAndTradeProc(GlobalMainUI,app)
 
 
     app.exec_()

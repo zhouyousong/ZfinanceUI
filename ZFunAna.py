@@ -81,9 +81,12 @@ class FunAnaProc:
 
         self.GlobalMainUI.IntelRecom.clicked.connect(self.HandleIntelligentRecommendation)
 
-        Temp= pd.read_csv('Data\\03_IntermediateData\TickersInfo.csv',sep=',',index_col='symbol',low_memory=False)
-        InfoDataBase = Temp[~numpy.isnan(Temp['sharesOutstanding'])]
-        ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
+        try:
+            Temp= pd.read_csv('Data\\03_IntermediateData\TickersInfo.csv',sep=',',index_col='symbol',low_memory=False)
+            InfoDataBase = Temp[~numpy.isnan(Temp['sharesOutstanding'])]
+            ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
+        except:
+            ZBaseFunc.Log2LogBox("TickersInfo.csv missing")
         self.ValueRatioPreviewFlag = True
         self.RaiseRatioPreviewFlag = True
         self.MarketCapTrendPreviewFlag = True
@@ -91,7 +94,7 @@ class FunAnaProc:
         self.GlobalMainUI.PreProcess.clicked.connect(self.HandlePreProcess)
 
         self.PreProcessUI = QUiLoader().load('UIDesign\PreProcess.ui')
-        self.PreProcessUI.LoadExist.clicked.connect(self.HandleLoadExist)
+       # self.PreProcessUI.LoadExist.clicked.connect(self.HandleLoadExist)
         self.PreProcessUI.ReloadNew.clicked.connect(self.HandleReloadNew)
 
         self.DCFavorEditorFavorUI = ZFavorEditor.FavorEditorUIProc()
@@ -101,26 +104,28 @@ class FunAnaProc:
 
     def HandlePreProcess(self):
         self.PreProcessUI.show()
-    def HandleLoadExist(self):
         self.PreProcessUI.PreProcessProgressBar.setValue(0)
-        self.GlobalAPP.processEvents()
-        try:
-            InfoDataBase = pd.read_csv('Data\\03_IntermediateData\TickersInfo.csv',sep=',',index_col='symbol')
-        except:
-            QMessageBox.information(self.PreProcessUI,"警告","没有找到预处理好的数据，是否全新加载",QMessageBox.Yes|QMessageBox.No,QMessageBox.Yes)
-            return
-        InfoDataBase = InfoDataBase[~numpy.isnan(InfoDataBase['sharesOutstanding'])]
-        ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
-        self.PreProcessUI.PreProcessProgressBar.setValue(100)
-        return
+
     def HandleReloadNew(self):
         global  GlobalAPP
         ZBaseFunc.Log2LogBox('Reload Ticker info Start')
         DataBasePath = os.getcwd() + '\\Data\\01_TickerDatabase'
-        TickerFolders = os.listdir(DataBasePath)
+
         InfoDataBase = pd.DataFrame()
+        try:
+            TickerFolders = os.listdir(DataBasePath)
+        except:
+            QMessageBox.information(None, "警告", "没有下载好的数据，请先去“数据下载”模块进行数据下载", QMessageBox.Yes,
+                                    QMessageBox.Yes)
+            os.mkdir(DataBasePath)
+            TickerFolders = []
         Mnt = len(TickerFolders)
+        if Mnt == 0:
+            QMessageBox.information(None, "警告", "没有下载好的数据，请先去“数据下载”模块进行数据下载", QMessageBox.Yes,QMessageBox.Yes)
+            self.PreProcessUI.close()
+            return
         cnt = 0
+        TemplastProgress = 0
         for TickerFolder in TickerFolders:
             cnt += 1
             TempInfPath = DataBasePath+'/'+TickerFolder+'/'+TickerFolder+'_inf.csv'
@@ -136,11 +141,16 @@ class FunAnaProc:
                 InfoDataBase = InfoDataBase.append(TempInfo)
             except:
                 pass
-            self.PreProcessUI.PreProcessProgressBar.setValue(cnt/Mnt*100)
-            self.GlobalAPP.processEvents()
+            if (cnt/Mnt - TemplastProgress >=0.005):
+                TemplastProgress = cnt/Mnt
+                self.PreProcessUI.PreProcessProgressBar.setValue(TemplastProgress*100)
+                self.GlobalAPP.processEvents()
         InfoDataBase.to_csv('Data\\03_IntermediateData\\TickersInfo.csv',sep=',',index_label='symbol')
         InfoDataBase = InfoDataBase[~numpy.isnan(InfoDataBase['sharesOutstanding'])]
         ZBaseFunc.SetTickersInfo(InfoDataBase)
+
+        ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
+
         ZBaseFunc.Log2LogBox('Reload Ticker info Finished')
         return
 
@@ -446,7 +456,10 @@ class FunAnaProc:
     def HandlePreGroup(self):
 
         self.TickersInfoDataBase = ZBaseFunc.GetTickersInfo()
-
+        if self.TickersInfoDataBase ==None:
+            QMessageBox.information(None, "警告", "没有找到预处理好的数据，请先“导入数据”", QMessageBox.Yes,
+                                    QMessageBox.Yes)
+            return
         SortList = self.TickersInfoDataBase.columns.values.tolist()
         TotalTickerNum = len(self.TickersInfoDataBase)
         ProcessCntSum = len(SortList)*2

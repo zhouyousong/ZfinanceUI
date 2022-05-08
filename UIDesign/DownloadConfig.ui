@@ -6,57 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>771</width>
-    <height>452</height>
+    <width>772</width>
+    <height>434</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QCheckBox" name="NASDAQCM">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>70</y>
-     <width>161</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Capital Market</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="NASDAQGM">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>50</y>
-     <width>161</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Global MarketSM</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="NASDAQGSM">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>30</y>
-     <width>181</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Global Select MarketSM</string>
-   </property>
-  </widget>
   <widget class="QCheckBox" name="Intervial_1Day">
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>28</y>
+     <y>18</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -69,7 +30,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>50</y>
+     <y>40</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -82,7 +43,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>70</y>
+     <y>60</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -95,7 +56,7 @@
    <property name="geometry">
     <rect>
      <x>628</x>
-     <y>370</y>
+     <y>350</y>
      <width>61</width>
      <height>31</height>
     </rect>
@@ -108,7 +69,7 @@
    <property name="geometry">
     <rect>
      <x>700</x>
-     <y>370</y>
+     <y>350</y>
      <width>61</width>
      <height>31</height>
     </rect>
@@ -124,7 +85,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>340</y>
+     <y>320</y>
      <width>441</width>
      <height>22</height>
     </rect>
@@ -155,7 +116,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>90</y>
+     <y>80</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -168,7 +129,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>110</y>
+     <y>100</y>
      <width>71</width>
      <height>21</height>
     </rect>
@@ -181,7 +142,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>130</y>
+     <y>120</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -194,7 +155,7 @@
    <property name="geometry">
     <rect>
      <x>510</x>
-     <y>30</y>
+     <y>50</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -207,7 +168,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>370</y>
+     <y>350</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -220,7 +181,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>370</y>
+     <y>350</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -233,7 +194,7 @@
    <property name="geometry">
     <rect>
      <x>550</x>
-     <y>370</y>
+     <y>350</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -246,9 +207,9 @@
    <property name="geometry">
     <rect>
      <x>510</x>
-     <y>80</y>
+     <y>90</y>
      <width>251</width>
-     <height>251</height>
+     <height>221</height>
     </rect>
    </property>
   </widget>
@@ -256,7 +217,7 @@
    <property name="geometry">
     <rect>
      <x>650</x>
-     <y>30</y>
+     <y>50</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -265,12 +226,12 @@
     <string>ETF指数</string>
    </property>
   </widget>
-  <widget class="QRadioButton" name="VPNEnable">
+  <widget class="QRadioButton" name="ProxyEnable">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>120</y>
-     <width>81</width>
+     <x>510</x>
+     <y>20</y>
+     <width>51</width>
      <height>20</height>
     </rect>
    </property>
@@ -281,24 +242,11 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="List_Favor">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>110</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Favor</string>
-   </property>
-  </widget>
   <widget class="QComboBox" name="MulitThreadDL">
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>160</y>
+     <y>140</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -311,7 +259,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>140</y>
+     <y>120</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -324,7 +272,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>170</y>
+     <y>160</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -337,7 +285,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>210</y>
+     <y>190</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -347,7 +295,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>190</y>
+     <y>170</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -360,7 +308,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>250</y>
+     <y>230</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -370,7 +318,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>230</y>
+     <y>210</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -383,7 +331,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>190</y>
+     <y>180</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -396,7 +344,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>210</y>
+     <y>200</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -409,7 +357,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>230</y>
+     <y>220</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -422,7 +370,7 @@
    <property name="geometry">
     <rect>
      <x>410</x>
-     <y>410</y>
+     <y>390</y>
      <width>351</width>
      <height>31</height>
     </rect>
@@ -435,7 +383,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>410</y>
+     <y>390</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -444,102 +392,11 @@
     <string>更新清单</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="NYSEMKT">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>30</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>NYSE MKT</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="NYSE">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>50</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>NYSE</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="NYSEARCA">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>70</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>NYSE ARCA</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="IEXG">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>110</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>IEXG</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="BATS">
-   <property name="geometry">
-    <rect>
-     <x>210</x>
-     <y>90</y>
-     <width>115</width>
-     <height>19</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>BATS</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="ShowPeriod_5">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>10</y>
-     <width>111</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>NASDAQ</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="ShowPeriod_6">
-   <property name="geometry">
-    <rect>
-     <x>230</x>
-     <y>10</y>
-     <width>111</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>NYSE</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="EditFavorList">
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>70</y>
+     <y>60</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -552,9 +409,9 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>140</y>
+     <y>230</y>
      <width>291</width>
-     <height>301</height>
+     <height>191</height>
     </rect>
    </property>
    <column>
@@ -567,7 +424,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>250</y>
+     <y>240</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -580,7 +437,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>270</y>
+     <y>260</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -593,7 +450,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>30</y>
+     <y>20</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -606,7 +463,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>310</y>
+     <y>290</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -619,7 +476,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>290</y>
+     <y>270</y>
      <width>91</width>
      <height>20</height>
     </rect>
@@ -632,7 +489,7 @@
    <property name="geometry">
     <rect>
      <x>420</x>
-     <y>310</y>
+     <y>290</y>
      <width>61</width>
      <height>21</height>
     </rect>
@@ -642,6 +499,100 @@
    </property>
    <property name="autoExclusive">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QTreeWidget" name="MarketSelector">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>40</y>
+     <width>291</width>
+     <height>151</height>
+    </rect>
+   </property>
+   <column>
+    <property name="text">
+     <string notr="true">1</string>
+    </property>
+   </column>
+  </widget>
+  <widget class="QLabel" name="ShowPeriod_8">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>选择下载市场</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ShowPeriod_9">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>200</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>选择收藏清单</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="ProxyIP">
+   <property name="geometry">
+    <rect>
+     <x>590</x>
+     <y>20</y>
+     <width>113</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="ProxyPort">
+   <property name="geometry">
+    <rect>
+     <x>720</x>
+     <y>20</y>
+     <width>41</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ShowPeriod_10">
+   <property name="geometry">
+    <rect>
+     <x>706</x>
+     <y>20</y>
+     <width>16</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string> :</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ShowPeriod_11">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>20</y>
+     <width>21</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>IP</string>
    </property>
   </widget>
  </widget>

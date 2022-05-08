@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>394</width>
-    <height>106</height>
+    <height>161</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>70</y>
+     <y>130</y>
      <width>371</width>
      <height>20</height>
     </rect>
@@ -26,7 +26,7 @@
     <number>43</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="LoadExist">
+  <widget class="QPushButton" name="ReloadNew">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -36,20 +36,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>加载已有</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="ReloadNew">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>10</y>
-     <width>91</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>全新加载</string>
+    <string>重新加载</string>
    </property>
   </widget>
   <widget class="QPushButton" name="PostProcess">
@@ -62,7 +49,39 @@
     </rect>
    </property>
    <property name="text">
-    <string>后处理</string>
+    <string>取消</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>40</y>
+     <width>321</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>当重新下载数据，有新的“基础数据”更新后，需要加载，若无更新，则可直接“开始分类”</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>80</y>
+     <width>321</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>重新加载的目的是将每个股票的基础数据集合成一个文件，便于加载内存进行分析</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
    </property>
   </widget>
  </widget>

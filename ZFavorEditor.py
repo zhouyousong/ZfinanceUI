@@ -61,10 +61,14 @@ class FavorEditorUIProc:
         popMenu = QMenu()
         if self.FavorEditorUI.FavorList.currentItem().parent() == None:
             Move2BlackList  = popMenu.addAction("移入黑名单")
-            Move2DefaultList  = popMenu.addAction('移入默认')
+            #Move2DefaultList  = popMenu.addAction('移入默认')
+            NewAFavorGroup  = popMenu.addAction("添加新的分类")
+            DeleteThisGroup  = popMenu.addAction('删除该分类')
 
             Move2BlackList.triggered.connect(self.MoveSelectedList2BlackList)
-            Move2DefaultList.triggered.connect(self.MoveSelectedList2DefaultList)
+            #Move2DefaultList.triggered.connect(self.MoveSelectedList2DefaultList)
+            DeleteThisGroup.triggered.connect(self.HandleFavorListDelete)#(item = None,colume=0))
+            NewAFavorGroup.triggered.connect(self.HandleAddNewGroup)
         popMenu.exec_(QCursor.pos())
         return
 
@@ -125,28 +129,29 @@ class FavorEditorUIProc:
             NasdaqTickerList = pd.read_csv('Data\\00_Config\\NasdaqTickerList.csv', sep='|')
             NyseAmexTickerList = pd.read_csv('Data\\00_Config\\NyseAmexTickerList.csv', sep='|')
 
-            Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['Q'])]
-            SelectList.extend(Temp['Symbol'].tolist())
-            Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['G'])]
-            SelectList.extend(Temp['Symbol'].tolist())
-            Temp = NasdaqTickerList.loc[NasdaqTickerList['Market Category'].isin(['S'])]
-            SelectList.extend(Temp['Symbol'].tolist())
 
-            Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['A'])]
-            SelectList.extend(Temp['ACT Symbol'].tolist())
-            Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['N'])]
-            SelectList.extend(Temp['ACT Symbol'].tolist())
-            Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['P'])]
-            SelectList.extend(Temp['ACT Symbol'].tolist())
-            Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['Z'])]
-            SelectList.extend(Temp['ACT Symbol'].tolist())
-            Temp = NyseAmexTickerList.loc[NyseAmexTickerList['Exchange'].isin(['V'])]
-            SelectList.extend(Temp['ACT Symbol'].tolist())
+
+            USTickerList = pd.read_csv('Data\\00_Config\\USTickerList.csv', sep=',',dtype={'股票代码':str})
+            HKTickerList = pd.read_csv('Data\\00_Config\\HKTickerList.csv', sep=',',dtype={'股票代码':str})
+            CNTickerList = pd.read_csv('Data\\00_Config\\CNTickerList.csv', sep=',',dtype={'股票代码':str})
+
+            Temp = CNTickerList.loc[CNTickerList['市场类型'].isin(['沪A'])]
+            SelectList.extend([str(i) + '.ss' for i in Temp['股票代码'].tolist()])
+
+            Temp = CNTickerList.loc[CNTickerList['市场类型'].isin(['深A'])]
+            SelectList.extend([str(i) + '.sz' for i in Temp['股票代码'].tolist()])
+
+            Temp = HKTickerList['股票代码'].tolist()
+            for i in Temp:
+                if int(i) < 10000:
+                    SelectList.append(i[-4:] + '.hk')
+
+            SelectList.extend(USTickerList['股票代码'].tolist())
+
 
         self.SelectList = SelectList
 
         self.HandleInputChanged()
-
         if(NewClass != ''):
             text, ok = QInputDialog.getText(self.FavorEditorUI, '创建新分类', '输入新分类名称:',text=NewClass)
             if ok and text != '':
@@ -170,7 +175,7 @@ class FavorEditorUIProc:
         self.FavorEditorUI.ListFilter.setModel(slm)
 
     def HandleAddAll(self):
-        for Ticker in self.SelectList:
+        for Ticker in self.FliteredList:
             self.HandleAddSymbol(Symbol = Ticker)
 
     def HandleAddSymbol(self,Symbol = None):
@@ -198,25 +203,21 @@ class FavorEditorUIProc:
         else:
             self.FavorEditorUI.FavorList.currentItem().addChild(child)
 
-    def HandleFavorListDelete(self,item,colume):
+    def HandleAddNewGroup(self):
+        text, ok = QInputDialog.getText(self.FavorEditorUI, '添加分类', '输入新的分类名:')
+        if ok:
+            QtreeNodeList = ZBaseFunc.GetQtreeRootNode(self.FavorEditorUI.FavorList)
+            if text in QtreeNodeList:
+                ZBaseFunc.Log2LogBox(text + ' class already exist in the favor list')
+                return
+            root = QTreeWidgetItem(self.FavorEditorUI.FavorList)
+            root.setText(0, text)
 
+    def HandleFavorListDelete(self): #item,colume):#不知道忘记了为什么这么做
+        colume =0
         if(colume == 0):
             currNode = self.FavorEditorUI.FavorList.currentItem()
-            if (self.FavorEditorUI.FavorList.currentIndex().parent().row() == -1):
-                if (self.FavorEditorUI.FavorList.currentItem().text(0) != 'DEFAULT' and
-                    self.FavorEditorUI.FavorList.currentItem().text(0) != 'BLACKLIST'):
-                    self.FavorEditorUI.FavorList.takeTopLevelItem(self.FavorEditorUI.FavorList.indexOfTopLevelItem(currNode))
-                else:
-                    text, ok = QInputDialog.getText(self.FavorEditorUI, '添加分类', '输入新的分类名:')
-                    if ok:
-                        QtreeNodeList = ZBaseFunc.GetQtreeRootNode(self.FavorEditorUI.FavorList)
-                        if text in QtreeNodeList:
-                            ZBaseFunc.Log2LogBox(text + ' class already exist in the favor list')
-                            return
-                        root = QTreeWidgetItem(self.FavorEditorUI.FavorList)
-                        root.setText(0, text)
-
-            else:
+            if (self.FavorEditorUI.FavorList.currentIndex().parent().row() != -1) & (self.FavorEditorUI.FavorList.currentColumn() == 0):
                 TempParent = currNode.parent()
                 TempParent.removeChild(currNode)
 
