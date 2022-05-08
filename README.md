@@ -59,6 +59,10 @@ pip install pyqt5
 pip install .\misc\TA_Lib-0.4.21-cp39-cp39-win_amd64.whl  
 ![图片](https://user-images.githubusercontent.com/88005595/164975132-59369293-0ff8-4635-ba04-e7b0214a846b.png)
 
+增加了A股和港股的数据拉取，解决了一些小问题  
+![图片](https://user-images.githubusercontent.com/88005595/167295569-2dad3566-782b-4aeb-b017-5b0e6c6c4c46.png)
+
+
 注意几个问题  
 yahoo财经去年（2021年）退出中国，所以必须vpn代理才能访问  
 
