@@ -152,6 +152,7 @@ class FunAnaProc:
         ZBaseFunc.SetTickersInfo(IN=InfoDataBase)
 
         ZBaseFunc.Log2LogBox('Reload Ticker info Finished')
+        self.PreProcessUI.close()
         return
 
     def HandleIntelligentRecommendation(self):
@@ -456,10 +457,13 @@ class FunAnaProc:
     def HandlePreGroup(self):
 
         self.TickersInfoDataBase = ZBaseFunc.GetTickersInfo()
-        if self.TickersInfoDataBase ==None:
-            QMessageBox.information(None, "警告", "没有找到预处理好的数据，请先“导入数据”", QMessageBox.Yes,
-                                    QMessageBox.Yes)
-            return
+        try:
+            if self.TickersInfoDataBase == None:
+                QMessageBox.information(None, "警告", "没有找到预处理好的数据，请先“导入数据”", QMessageBox.Yes,
+                                        QMessageBox.Yes)
+                return
+        except:
+            pass
         SortList = self.TickersInfoDataBase.columns.values.tolist()
         TotalTickerNum = len(self.TickersInfoDataBase)
         ProcessCntSum = len(SortList)*2
