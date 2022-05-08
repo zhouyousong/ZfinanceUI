@@ -55,7 +55,7 @@ pip install PySide2
 pip install pyqt5  
 ![图片](https://user-images.githubusercontent.com/88005595/164975150-225362af-ebfb-4590-9f26-d3e9e47721c4.png)
 
-另外TA_lib 似乎不能在线安装，所以我已经上传离线安装包了  
+另外TA_lib 似乎不能在线安装，所以我已经上传离线安装包了（注意，我上传得是对应python3.9 64位版本，也可以到 https://www.lfd.uci.edu/~gohlke/pythonlibs/#ta-lib 下载自己环境对应得版本）  
 pip install .\misc\TA_Lib-0.4.21-cp39-cp39-win_amd64.whl  
 ![图片](https://user-images.githubusercontent.com/88005595/164975132-59369293-0ff8-4635-ba04-e7b0214a846b.png)
 
