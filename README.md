@@ -36,6 +36,15 @@
 回测的效果图  
 ![图片](https://user-images.githubusercontent.com/88005595/164957423-ac222ef5-1fd2-4dfc-aa15-c865bf739a29.png)  
 
+分析效果图
+如：港股里通讯行业58支股票总市值的走势，以及平均市值，毛利润总和等  
+![图片](https://user-images.githubusercontent.com/88005595/167413608-8298d35b-779c-4860-b321-b5b4c9cd58ab.png)
+如：港股北京上市股票的总市值和平均市值  
+![图片](https://user-images.githubusercontent.com/88005595/167413877-dab257ee-fc1a-428c-a8f3-f1b80a9dd8c2.png)
+如：港股按城市域排序，杭州平均市值最高  
+![图片](https://user-images.githubusercontent.com/88005595/167414012-012f0e02-8959-4481-9300-41277f99e9ff.png)
+
+总之大家可以自己想想怎么组合，比如港股里北京的做通讯的.....然后看看能不能挖掘出逆势的板块
 
 安装方法  
 我是用pycharm的，所以我也并没有验证过纯python的环境运行如何  
@@ -61,6 +70,12 @@ pip install .\misc\TA_Lib-0.4.21-cp39-cp39-win_amd64.whl
 
 增加了A股和港股的数据拉取，解决了一些小问题  
 ![图片](https://user-images.githubusercontent.com/88005595/167295569-2dad3566-782b-4aeb-b017-5b0e6c6c4c46.png)
+
+也新增如下库，用于拉取列表，顺便推荐一下efinance，不需要翻墙就可以拿数据，但是由于我已经用yfinance做好了，所以就没重写  
+pip install efinance  
+
+如何是纯python环境不含ide的环境运行，注意下运行方法，需要cmd先进到在zfinance的文件夹路径下，再用你的python路径，指向ZfinanceMainUi.py去打开，如下图所示  
+![图片](https://user-images.githubusercontent.com/88005595/167413171-78ce8720-b1f4-4013-ba34-6afb726ebc5a.png)
 
 
 注意几个问题  
