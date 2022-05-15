@@ -1,5 +1,6 @@
 Data/01_TickerDatabase/
 Data/00_Config/BackTestParaGroup/
+Data/00_Config/DefaultTradePara.ZFtd
 Data/05_BackTestResult/
 venv/
 tda-api-CFG.txt

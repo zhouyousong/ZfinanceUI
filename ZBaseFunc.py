@@ -8,7 +8,7 @@ from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 
-import glob,os
+import glob,os,json
 
 import time
 StartTime = 0
@@ -49,8 +49,6 @@ def GetQtreeRootNode(Qtree =None):
             Err = True
         i+=1
     return RootNoteList
-
-
 def SetTickersInfo(IN = None):
     global InfoBuffer
     InfoBuffer = IN
@@ -154,3 +152,117 @@ def dataframe_generation_from_table(table):
                 tmp_df.iloc[i, j] = 'NA'
 
     return tmp_df
+
+def CleanTable(TableColumeItem,Table):
+    Table.clear()
+    Table.setColumnCount(len(TableColumeItem) + 1)
+    Table.setRowCount(0)
+    Table.verticalHeader().setVisible(False)
+    Table.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
+    Table.setFont(QFont('song', 8))
+    Table.horizontalHeader().setFont(QFont('song', 8))
+    Table.verticalScrollBar().setValue(0)
+
+    Table.setColumnWidth(0, 60)
+
+    Col = 1
+    for i in TableColumeItem:
+        Table.setColumnWidth(Col, int(i.split(":")[1]))
+        Col = Col + 1
+
+    Temp = ['SYM']
+    for i in TableColumeItem:
+        Temp.append(i.split(":")[0])
+    Table.setHorizontalHeaderLabels(Temp)
+
+def AddFavorListToTable(InputList,OutputTable):
+
+    TempIndexs = []
+    number_of_rows = OutputTable.rowCount()
+    for i in range(number_of_rows):
+        TempIndexs.append(OutputTable.item(i,0).text())
+
+    cursor = QTreeWidgetItemIterator(InputList)
+    SymbolList = []
+    while cursor.value():
+        Temp = cursor.value()
+        ChildCnt = Temp.childCount()
+        if (ChildCnt == 0):
+            if (Temp.checkState(0)):
+                SymbolList.append(Temp.text(0))
+                print('add-' + Temp.text(0))
+        elif Temp.text(0) == 'BLACKLIST':
+            for i in range(ChildCnt):
+                cursor = cursor.__iadd__(1)
+                Temp = cursor.value()
+                # print('Delete-' + Temp.text(0))
+                try:
+                    SymbolList.remove(Temp.text(0))
+                except:
+                    pass
+        cursor = cursor.__iadd__(1)
+    ############################去重复
+    SymbolList.extend(TempIndexs)
+    temp_list = []
+    for one in SymbolList:
+        if one not in temp_list:
+            temp_list.append(one)
+    SymbolList = temp_list
+    ############################
+    OutputTable.setRowCount(len(SymbolList))
+    Row = 0
+    for i in SymbolList:
+        SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
+        OutputTable.setRowHeight(Row, 5)
+        OutputTable.setItem(Row, 0, SymbolsInTable)
+        Row = Row + 1
+    ############################
+
+def RefreshTable(Table):
+
+    TempHeader = []
+    number_of_columns = Table.columnCount()
+    for i in range(number_of_columns):
+        TempHeader.append(Table.horizontalHeaderItem(i).text())
+
+    TempIndexs = []
+    number_of_rows = Table.rowCount()
+    for i in range(number_of_rows):
+        TempIndexs.append(Table.item(i,0).text())
+
+    Table.clear()
+
+    Table.setHorizontalHeaderLabels(TempHeader)
+
+    Row = 0
+    for i in TempIndexs:
+        SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
+        Table.setItem(Row, 0, SymbolsInTable)
+        Row = Row + 1
+
+    return TempIndexs
+
+def LoadConfigFile(FileName,DefaultDict):
+
+    FilePathName = os.getcwd() + '\\Data\\00_Config\\'+FileName
+    try:
+        with open(FilePathName, 'r') as load_f:
+            LoadDict = json.load(load_f)
+        Log2LogBox("Load User Config file:[" + FileName + "]Successed")
+    except:
+        Log2LogBox("Load User Config file:[" + FileName + "]Failed,system default will used")
+        LoadDict = DefaultDict
+
+    return LoadDict
+
+def SaveConfigFile(FileName, DumpDict):
+    FilePathName = os.getcwd() + '\\Data\\00_Config\\'+FileName
+    try:
+        with open(FilePathName, "w") as f:
+            json.dump(DumpDict, f)
+            Log2LogBox("Save User Config file:[" + FileName + "] Successed")
+    except:
+        Log2LogBox("Save User Config file:[" + FileName + "] Failed")
+
+    return
+

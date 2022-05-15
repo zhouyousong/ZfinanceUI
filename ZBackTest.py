@@ -500,10 +500,7 @@ class BackTestProc:
         self.GlobalMainUI.OpenGroupBackTestParas.clicked.connect(self.HandleOpenGroupBackTestParas)
         self.GlobalMainUI.StartGroupBackTestings.clicked.connect(self.HandleStartGroupBackTestings)
 
-        self.GlobalMainUI.BackTestTable.clear()
-        self.GlobalMainUI.BackTestTable.setRowCount(0)
-        self.GlobalMainUI.BackTestTable.setColumnCount(len(ZfinanceCfg.BackTestTableColumeItem) + 1)
-
+        ZBaseFunc.CleanTable(ZfinanceCfg.BackTestTableColumeItem,self.GlobalMainUI.BackTestTable)
 
         self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
         self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
@@ -551,36 +548,12 @@ class BackTestProc:
                 self.GlobalMainUI.StartGroupBackTestings.setDisabled(False)
 
     def HandleImportSymbolsToBackTest(self):
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestSymbolList)
-        self.BackTestList = []
-        while cursor.value():
-            Temp = cursor.value()
-            ChildCnt = Temp.childCount()
-            if(ChildCnt == 0):
-                if(Temp.checkState(0)):
-                    self.BackTestList.append(Temp.text(0))
-                    print('add-' + Temp.text(0))
-            elif Temp.text(0) =='BLACKLIST':
-                for i in range(ChildCnt):
-                    cursor = cursor.__iadd__(1)
-                    Temp = cursor.value()
-                    #print('Delete-' + Temp.text(0))
-                    try:
-                        self.BackTestList.remove(Temp.text(0))
-                    except:
-                        pass
-            cursor = cursor.__iadd__(1)
-        ############################去重复
-        temp_list = []
-        for one in self.BackTestList:
-            if one not in temp_list:
-                temp_list.append(one)
-        self.BackTestList = temp_list
-        ############################
-        self.CleanTable()
+
+        ZBaseFunc.CleanTable(Table=self.GlobalMainUI.BackTestTable,TableColumeItem=ZfinanceCfg.BackTestTableColumeItem)
+        ZBaseFunc.AddFavorListToTable(InputList=self.BackTestCfgUI.BackTestSymbolList,OutputTable=self.GlobalMainUI.BackTestTable)
         self.GlobalMainUI.StartBackTesting.setDisabled(False)
         self.GlobalMainUI.StartBackTesting.setText("开始单测试")
-        ############################
+
     def CancelAllChildrenInFavorList(self):
         self.BackTestCfgUI.BackTestSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
         cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestSymbolList.currentItem())
@@ -949,7 +922,8 @@ class BackTestProc:
     def StartBackTesting(self,BTPara=None,GroupFolderPath=None):
         global GlobalApplyResult,GlobalResultFilePath
         global GlobalMainUI, GlobalResultFilePath
-        self.CleanTable()
+
+        BackTestList = ZBaseFunc.RefreshTable(Table=self.GlobalMainUI.BackTestTable)
         #读取参数
 
 
@@ -1043,7 +1017,7 @@ class BackTestProc:
         self.p = mp.Pool(processes=BackTestDict['ProcessConfig']['ProcessorCnt'])
         j = 0
         AsyncResult = []
-        for i in  self.BackTestList:
+        for i in  BackTestList:
             j += 1
             AsyncResult.append(self.p.apply_async(func=SignelBackTesting, args=(i,paras),callback=SignelBackTestingCallBack,error_callback=SignelBackTestingErorrCallBack))
         GlobalApplyResult = AsyncResult
@@ -1383,33 +1357,33 @@ class BackTestProc:
 
         pass
 
-    def CleanTable(self):
-        self.GlobalMainUI.BackTestTable.clear()
-        self.GlobalMainUI.BackTestTable.setRowCount(len(self.BackTestList))
-        self.GlobalMainUI.BackTestTable.setColumnCount(len(ZfinanceCfg.BackTestTableColumeItem) + 1)
-
-        self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
-        self.GlobalMainUI.BackTestTable.setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.verticalScrollBar().setValue(0)
-        Row = 0
-        for i in self.BackTestList:
-            SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
-            self.GlobalMainUI.BackTestTable.setRowHeight(Row, 5)
-            self.GlobalMainUI.BackTestTable.setItem(Row, 0, SymbolsInTable)
-            Row = Row + 1
-
-        self.GlobalMainUI.BackTestTable.setColumnWidth(0, 40)
-
-        Col = 1
-        for i in range(len(ZfinanceCfg.BackTestTableColumeItem)):
-            self.GlobalMainUI.BackTestTable.setColumnWidth(Col, 60)
-            Col = Col + 1
-        self.GlobalMainUI.BackTestTable.setColumnWidth(1, 80)
-        self.GlobalMainUI.BackTestTable.setColumnWidth(2, 80)
-        Temp = ['SYM']
-        for i in ZfinanceCfg.BackTestTableColumeItem:
-            Temp.append(i)
-        self.GlobalMainUI.BackTestTable.setHorizontalHeaderLabels(Temp)
+    # def CleanTable(self):
+    #     self.GlobalMainUI.BackTestTable.clear()
+    #     self.GlobalMainUI.BackTestTable.setRowCount(len(self.BackTestList))
+    #     self.GlobalMainUI.BackTestTable.setColumnCount(len(ZfinanceCfg.BackTestTableColumeItem) + 1)
+    #
+    #     self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
+    #     self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
+    #     self.GlobalMainUI.BackTestTable.setFont(QFont('song', 8))
+    #     self.GlobalMainUI.BackTestTable.horizontalHeader().setFont(QFont('song', 8))
+    #     self.GlobalMainUI.BackTestTable.verticalScrollBar().setValue(0)
+    #     Row = 0
+    #     for i in self.BackTestList:
+    #         SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
+    #         self.GlobalMainUI.BackTestTable.setRowHeight(Row, 5)
+    #         self.GlobalMainUI.BackTestTable.setItem(Row, 0, SymbolsInTable)
+    #         Row = Row + 1
+    #
+    #     self.GlobalMainUI.BackTestTable.setColumnWidth(0, 40)
+    #
+    #     Col = 1
+    #     for i in range(len(ZfinanceCfg.BackTestTableColumeItem)):
+    #         self.GlobalMainUI.BackTestTable.setColumnWidth(Col, 60)
+    #         Col = Col + 1
+    #     self.GlobalMainUI.BackTestTable.setColumnWidth(1, 80)
+    #     self.GlobalMainUI.BackTestTable.setColumnWidth(2, 80)
+    #     Temp = ['SYM']
+    #     for i in ZfinanceCfg.BackTestTableColumeItem:
+    #         Temp.append(i)
+    #     self.GlobalMainUI.BackTestTable.setHorizontalHeaderLabels(Temp)
 

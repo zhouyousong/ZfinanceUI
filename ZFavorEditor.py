@@ -39,6 +39,8 @@ def LoadFavorListCfg(FavorList = QTreeWidget,CheckBox = None):
             child.setText(2, i[2])
             if CheckBox:
                 child.setCheckState(0, Qt.Checked)
+            elif CheckBox== False:
+                child.setCheckState(0, Qt.Unchecked)
             child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable|Qt.ItemIsUserCheckable)
     FavorList.addTopLevelItem(root)
 

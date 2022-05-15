@@ -60,8 +60,8 @@ class TrendMode(Enum):
     DN          = 1
     NO          = 2
 
-BackTestTableColumeItem = ['Start', 'End', 'FlPL', 'StdPL', 'FixPL']
-MonitorAndTradeTableColumeItem = ['Mark', 'Status', 'Trade On/Off']
+BackTestTableColumeItem = ['Start:80', 'End:80', 'FlPL:60', 'StdPL:60', 'FixPL:60']
+MonitorTableColumeItem = ['Market:80',' Strategy:60', 'Status:60', 'Trade On/Off:100']
 BalanceTableColumeItem = ['P/L Day', 'P/L Open', 'Cost', 'Mark', 'P/L %', 'Net Liq']
 
 DebugStatusStr = {
@@ -161,6 +161,22 @@ BackTestPara = {
 
 
 
+}
+MonitorPara = {
+                    "Timming": {
+                        "Interval(Min)": 5,
+                    }
+}
+TradePara = {
+    "MailNotifyEnable": False,
+    "SendMailBoxAddr": "",
+    "SendMailBoxPwd": "",
+    "RevMailBoxAddr": "",
+
+    "TdaAccountMonitorEnable": False,
+    "TdaTradeRotEnable": False,
+    "TdaAPIOAuthUserID": "",
+    "TdaAPIRefreshToken": "",
 }
 
 class TableColor(Enum):

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Download Config</string>
   </property>
   <widget class="QCheckBox" name="Intervial_1Day">
    <property name="geometry">

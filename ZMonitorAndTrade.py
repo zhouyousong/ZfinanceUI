@@ -26,6 +26,7 @@ import numpy as np
 from PySide2.QtCore import *
 from PySide2.QtGui import QCursor
 import time,datetime,copy
+import ZNotify,ZTrader
 
 GlobalMainUI = None
 GlobalApplyResult = []
@@ -56,30 +57,25 @@ class MonitorAndTradeProc:
         self.GlobalMainUI.BalanceTable.setRowCount(0)
         self.GlobalMainUI.BalanceTable.setColumnCount(len(ZfinanceCfg.BalanceTableColumeItem) + 1)
 
-        self.GlobalMainUI.MonitorAndTradeTable.clear()
-        self.GlobalMainUI.MonitorAndTradeTable.setRowCount(0)
-        self.GlobalMainUI.MonitorAndTradeTable.setColumnCount(len(ZfinanceCfg.MonitorAndTradeTableColumeItem) + 1)
+        ZBaseFunc.CleanTable(ZfinanceCfg.MonitorTableColumeItem,self.GlobalMainUI.MonitorAndTradeTable)
+
+        self.MonitorAndTradeCfgUI = QUiLoader().load('UIDesign\MonitorParaEditor.ui')
 
 
-        self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
-        self.GlobalMainUI.BackTestTable.setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.verticalScrollBar().setValue(0)
+
+        self.MonitorAndTradeCfgUI.LoadMonitorPara.clicked.connect(self.HandleLoadBackTestPara)
+        self.MonitorAndTradeCfgUI.ApplyBackTestPara.clicked.connect(self.HandleApplyBackTestPara)
+        self.MonitorAndTradeCfgUI.SaveMonitorPara.clicked.connect(self.HandleSaveMonitorPara)
+
+        self.MonitorAndTradeCfgUI.VerifyTradeConfig.clicked.connect(self.HandleVerifyTradeConfig)
+        self.MonitorAndTradeCfgUI.SaveTradeConfig.clicked.connect(self.HandleSaveTradeConfig)
+        self.MonitorAndTradeCfgUI.CloseMonitorParaEditor.clicked.connect(self.HandleCloseMonitorParaEditor)
 
 
-        self.BackTestCfgUI = QUiLoader().load('UIDesign\BackTestingParaEditor.ui')
+        self.MonitorAndTradeCfgUI.MonitorSymbolList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.MonitorAndTradeCfgUI.MonitorSymbolList.customContextMenuRequested[QPoint].connect(self.FavorListChechboxSelectMenu)
 
-        self.BackTestCfgUI.SaveBackTestPara.clicked.connect(self.HandleSaveBackTestPara)
-        self.BackTestCfgUI.GenBackTestParaFiles.clicked.connect(self.HandleGenBackTestParaFiles)
-        self.BackTestCfgUI.LoadBackTestPara.clicked.connect(self.HandleLoadBackTestPara)
-        self.BackTestCfgUI.CancelBackTestPara.clicked.connect(self.HandleCancelBackTestPara)
-
-
-        self.BackTestCfgUI.BackTestSymbolList.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.BackTestCfgUI.BackTestSymbolList.customContextMenuRequested[QPoint].connect(self.FavorListChechboxSelectMenu)
-        self.BackTestCfgUI.ImportSymbolsToBackTest.clicked.connect(self.HandleImportSymbolsToBackTest)
-        self.GlobalMainUI.FunAnaGroupProgressBar.setValue(0)
+        self.MonitorAndTradeCfgUI.ImportToMonitorTable.clicked.connect(self.HandleImportToMonitorTable)
 
         self.StopFlag = True
 
@@ -90,106 +86,36 @@ class MonitorAndTradeProc:
         self.GlobalMainUI.StartBackTesting.setDisabled(True)
         self.GlobalMainUI.StartBackTesting.setText("请加入股票")
 
-
- #       self.HandleStartBackTesting()
- #       self.HandleSetBackTestPara()
-
-    def HandleOpenGroupBackTestParas(self):
-        self.BackTestParaGroups, ok = QFileDialog.getOpenFileNames(None, "选择配置文件", 'Data/00_Config/BackTestParaGroup', '(*.ZFbt)')
-        if len(self.BackTestParaGroups) == 0:
-            self.GlobalMainUI.StartGroupBackTestings.setDisabled(True)
-            self.GlobalMainUI.StartGroupBackTestings.setText("请选参数文件")
-        else:
-            self.GlobalMainUI.StartGroupBackTestings.setText("开始组测试")
-            if GlobalSingleRunningFlag == False:
-                self.GlobalMainUI.StartGroupBackTestings.setDisabled(False)
-
-    def HandleImportSymbolsToBackTest(self):
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestSymbolList)
-        self.BMList = []
-        while cursor.value():
-            Temp = cursor.value()
-            ChildCnt = Temp.childCount()
-            if(ChildCnt == 0):
-                if(Temp.checkState(0)):
-                    self.BMList.append(Temp.text(0))
-                    print('add-' + Temp.text(0))
-            elif Temp.text(0) =='BLACKLIST':
-                for i in range(ChildCnt):
-                    cursor = cursor.__iadd__(1)
-                    Temp = cursor.value()
-                    #print('Delete-' + Temp.text(0))
-                    try:
-                        self.BMList.remove(Temp.text(0))
-                    except:
-                        pass
-            cursor = cursor.__iadd__(1)
-        ############################去重复
-        temp_list = []
-        for one in self.BMList:
-            if one not in temp_list:
-                temp_list.append(one)
-        self.BMList = temp_list
-        ############################
-        self.CleanTable()
-        self.GlobalMainUI.StartBackTesting.setDisabled(False)
-        self.GlobalMainUI.StartBackTesting.setText("开始单测试")
-        ############################
-    def CancelAllChildrenInFavorList(self):
-        self.BackTestCfgUI.BackTestSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestSymbolList.currentItem())
-        ChildCnt = cursor.value().childCount()
-        cursor = cursor.__iadd__(1)
-
-        for i in range(ChildCnt):
-            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
-            cursor = cursor.__iadd__(1)
-
-    def SelectAllChildrenInFavorList(self):
-        self.BackTestCfgUI.BackTestSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestSymbolList.currentItem())
-        ChildCnt = cursor.value().childCount()
-        cursor = cursor.__iadd__(1)
-
-        for i in range(ChildCnt):
-            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
-            cursor = cursor.__iadd__(1)
-
-    def FavorListChechboxSelectMenu(self):
-        popMenu = QMenu()
-        if self.BackTestCfgUI.BackTestSymbolList.currentItem().parent() == None:
-
-            SelectAll  = popMenu.addAction('全选')
-            CancelAll  = popMenu.addAction("取消全选")
-
-            CancelAll.triggered.connect(self.CancelAllChildrenInFavorList)
-            SelectAll.triggered.connect(self.SelectAllChildrenInFavorList)
-        popMenu.exec_(QCursor.pos())
-        return
+        self.TradeDict       = ZBaseFunc.LoadConfigFile(FileName="DefaultTradePara.ZFtd",DefaultDict=ZfinanceCfg.TradePara)
+        self.MonitorParaDict = ZBaseFunc.LoadConfigFile(FileName="DefaultMonitorPara.ZFmt",DefaultDict=ZfinanceCfg.MonitorPara)
 
     def HandleSetMonitorAndTradePara(self):
-        self.BackTestCfgUI.show()
-        ZFavorEditor.LoadFavorListCfg(self.BackTestCfgUI.BackTestSymbolList, CheckBox=False)
-        BackTestParaFilePathName = os.getcwd() + '\\Data\\00_Config\\DefaultMonitorAndTradePara.ZFbt'
-        try:
-            with open(BackTestParaFilePathName, 'r') as load_f:
-                self.BackTestDict = json.load(load_f)
-            print('Load Default FavorList Config success!!')
-        except:
-            print('Load Default FavorList Config Fail!!')
-            self.BackTestDict = ZfinanceCfg.BackTestPara
 
-        pass
-        self.BackTestCfgUI.BackTestPara.setColumnCount(3)
-        self.BackTestCfgUI.BackTestPara.setHeaderLabels(('Key', 'Value','Comment'))
-        self.BackTestCfgUI.BackTestPara.clear()
-        #self.BackTestCfgUI.BackTestPara.setColumnHidden(2,True)
-        for Lv1Key,Lv1Val in self.BackTestDict.items():
-            Lv1Child = QTreeWidgetItem(self.BackTestCfgUI.BackTestPara)
+        self.MonitorAndTradeCfgUI.show()
+
+        ZFavorEditor.LoadFavorListCfg(self.MonitorAndTradeCfgUI.MonitorSymbolList, CheckBox=False)
+
+        self.MonitorAndTradeCfgUI.MailNotifyEnable.setChecked(self.TradeDict["MailNotifyEnable"])
+        self.MonitorAndTradeCfgUI.SendMailBoxAddr.setText(self.TradeDict["SendMailBoxAddr"])
+        self.MonitorAndTradeCfgUI.SendMailBoxPwd.setText(self.TradeDict["SendMailBoxPwd"])
+        self.MonitorAndTradeCfgUI.RevMailBoxAddr.setText(self.TradeDict["RevMailBoxAddr"])
+
+        self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.setChecked(self.TradeDict["TdaAccountMonitorEnable"])
+        self.MonitorAndTradeCfgUI.TdaTradeRotEnable.setChecked(self.TradeDict["TdaTradeRotEnable"])
+        self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.setText(self.TradeDict["TdaAPIOAuthUserID"])
+        self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.setText(self.TradeDict["TdaAPIRefreshToken"])
+
+
+        self.MonitorAndTradeCfgUI.MonitorPara.setColumnCount(3)
+        self.MonitorAndTradeCfgUI.MonitorPara.setHeaderLabels(('Key', 'Value', 'Comment'))
+        self.MonitorAndTradeCfgUI.MonitorPara.clear()
+        # self.BackTestCfgUI.BackTestPara.setColumnHidden(2,True)
+        for Lv1Key, Lv1Val in self.MonitorParaDict.items():
+            Lv1Child = QTreeWidgetItem(self.MonitorAndTradeCfgUI.MonitorPara)
             Lv1Child.setText(0, Lv1Key)
             Lv1Child.setExpanded(True)
-            if isinstance(Lv1Val,dict):
-                for Lv2Key,Lv2Val in Lv1Val.items():
+            if isinstance(Lv1Val, dict):
+                for Lv2Key, Lv2Val in Lv1Val.items():
                     if Lv2Key == 'Enable':
                         Lv1Child.setText(2, 'CheckBox')
                         if Lv2Val == True:
@@ -199,7 +125,7 @@ class MonitorAndTradeProc:
                     else:
                         Lv2Child = QTreeWidgetItem(Lv1Child)
                         Lv2Child.setExpanded(True)
-                        if isinstance(Lv2Val,dict):
+                        if isinstance(Lv2Val, dict):
                             Lv2Child.setText(0, Lv2Key)
                             for Lv3Key, Lv3Val in Lv2Val.items():
                                 if Lv3Key == 'Enable':
@@ -212,7 +138,7 @@ class MonitorAndTradeProc:
                                     Lv3Child = QTreeWidgetItem(Lv2Child)
                                     Lv3Child.setExpanded(True)
                                     Lv3Child.setText(0, Lv3Key)
-                                    if(isinstance(Lv3Val,bool)):
+                                    if (isinstance(Lv3Val, bool)):
                                         Lv3Child.setText(2, "CheckBox-")
                                         if Lv3Val:
                                             Lv3Child.setCheckState(1, Qt.Checked)
@@ -234,6 +160,96 @@ class MonitorAndTradeProc:
                             Lv2Child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable)
             else:
                 Lv1Child.setText(1, Lv1Val)
+
+    def HandleApplyBackTestPara(self):
+        pass
+
+    def HandleVerifyTradeConfig(self):
+        SendMailBoxAddr = self.MonitorAndTradeCfgUI.SendMailBoxAddr.text()
+        SendMailBoxPwd = self.MonitorAndTradeCfgUI.SendMailBoxPwd.text()
+        RevMailBoxAddr =  self.MonitorAndTradeCfgUI.RevMailBoxAddr.text()
+
+        TdaAPIOAuthUserID = self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.text()
+        TdaAPIRefreshToken = self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.text()
+
+        MailNotifyResult = "NA"
+        TDAStatus = "NA"
+        if self.MonitorAndTradeCfgUI.MailNotifyEnable.isChecked():
+            MailNotifyResult = ZNotify.send_email(SendAddr=SendMailBoxAddr,SendPwd=SendMailBoxPwd,RevAddr=RevMailBoxAddr,subject="ZfinanceTest",html_body="Check")
+        if self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.isChecked() or self.MonitorAndTradeCfgUI.TdaTradeRotEnable.isChecked():
+            TDAStatus,TdaAPIRefreshToken,TdaAPIAccessToken = ZTrader.GetNewAccessToken(OAuthUserID=TdaAPIOAuthUserID,RefreshToken=TdaAPIRefreshToken,TradeDict=self.TradeDict)
+            if TDAStatus =="Get Token Successed":
+                self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.setText(TdaAPIRefreshToken)
+
+        QMessageBox.information(None, "警告", "163邮件提醒验证："+MailNotifyResult+"\r\n"+"TDAmeritrade API 验证："+TDAStatus, QMessageBox.Yes,
+                                QMessageBox.Yes)
+
+
+    def HandleCloseMonitorParaEditor(self):
+        pass
+
+    def HandleSaveTradeConfig(self):
+        self.TradeDict["SendMailBoxAddr"] = self.MonitorAndTradeCfgUI.SendMailBoxAddr.text()
+        self.TradeDict["SendMailBoxPwd"] = self.MonitorAndTradeCfgUI.SendMailBoxPwd.text()
+        self.TradeDict["RevMailBoxAddr"] = self.MonitorAndTradeCfgUI.RevMailBoxAddr.text()
+        self.TradeDict["MailNotifyEnable"]=self.MonitorAndTradeCfgUI.MailNotifyEnable.isChecked()
+
+        self.TradeDict["TdaAPIOAuthUserID"] = self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.text()
+        self.TradeDict["TdaAPIRefreshToken"] = self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.text()
+        self.TradeDict["TdaAccountMonitorEnable"] =self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.isChecked()
+        self.TradeDict["TdaTradeRotEnable"] = self.MonitorAndTradeCfgUI.TdaTradeRotEnable.isChecked()
+
+        ZBaseFunc.SaveConfigFile(FileName="DefaultTradePara.ZFtd",DumpDict=self.TradeDict)
+
+    def HandleOpenGroupBackTestParas(self):
+        self.BackTestParaGroups, ok = QFileDialog.getOpenFileNames(None, "选择配置文件", 'Data/00_Config/BackTestParaGroup', '(*.ZFbt)')
+        if len(self.BackTestParaGroups) == 0:
+            self.GlobalMainUI.StartGroupBackTestings.setDisabled(True)
+            self.GlobalMainUI.StartGroupBackTestings.setText("请选参数文件")
+        else:
+            self.GlobalMainUI.StartGroupBackTestings.setText("开始组测试")
+            if GlobalSingleRunningFlag == False:
+                self.GlobalMainUI.StartGroupBackTestings.setDisabled(False)
+
+    def HandleImportToMonitorTable(self):
+        ZBaseFunc.CleanTable(Table=self.GlobalMainUI.MonitorAndTradeTable,TableColumeItem=ZfinanceCfg.MonitorTableColumeItem)
+        ZBaseFunc.AddFavorListToTable(InputList=self.MonitorAndTradeCfgUI.MonitorSymbolList,OutputTable=self.GlobalMainUI.MonitorAndTradeTable)
+        self.GlobalMainUI.StartMonitorAndTrade.setDisabled(False)
+        self.GlobalMainUI.StartMonitorAndTrade.setText("开始监控")
+        pass
+
+    def CancelAllChildrenInFavorList(self):
+        self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
+        cursor = QTreeWidgetItemIterator(self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem())
+        ChildCnt = cursor.value().childCount()
+        cursor = cursor.__iadd__(1)
+
+        for i in range(ChildCnt):
+            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
+            cursor = cursor.__iadd__(1)
+
+    def SelectAllChildrenInFavorList(self):
+        self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
+        cursor = QTreeWidgetItemIterator(self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem())
+        ChildCnt = cursor.value().childCount()
+        cursor = cursor.__iadd__(1)
+
+        for i in range(ChildCnt):
+            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
+            cursor = cursor.__iadd__(1)
+
+    def FavorListChechboxSelectMenu(self):
+        popMenu = QMenu()
+        if self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().parent() == None:
+
+            SelectAll  = popMenu.addAction('全选')
+            CancelAll  = popMenu.addAction("取消全选")
+
+            CancelAll.triggered.connect(self.CancelAllChildrenInFavorList)
+            SelectAll.triggered.connect(self.SelectAllChildrenInFavorList)
+        popMenu.exec_(QCursor.pos())
+        return
+
 
     def HandleSaveBackTestPara(self):
         cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestPara)
@@ -391,7 +407,7 @@ class MonitorAndTradeProc:
     def HandleLoadBackTestPara(self):
         pass
 
-    def HandleCancelBackTestPara(self):
+    def HandleSaveMonitorPara(self):
         self.BackTestCfgUI.close()
         pass
 
@@ -401,6 +417,7 @@ class MonitorAndTradeProc:
             requests.Request()
 
         else:
+            pass
 
 
 
