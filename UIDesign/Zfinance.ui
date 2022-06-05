@@ -735,7 +735,7 @@
      <rect>
       <x>10</x>
       <y>530</y>
-      <width>461</width>
+      <width>1231</width>
       <height>271</height>
      </rect>
     </property>
@@ -758,10 +758,10 @@
     <widget class="QTableWidget" name="MonitorAndTradeTable">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>60</y>
-       <width>271</width>
-       <height>211</height>
+       <x>370</x>
+       <y>20</y>
+       <width>851</width>
+       <height>241</height>
       </rect>
      </property>
     </widget>
@@ -778,21 +778,27 @@
       <string>设置参数</string>
      </property>
     </widget>
-    <widget class="QLCDNumber" name="lcdNumber">
+    <widget class="QLCDNumber" name="NetLiqInTdaAccount">
      <property name="geometry">
       <rect>
-       <x>380</x>
+       <x>170</x>
        <y>20</y>
        <width>71</width>
        <height>31</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>7</pointsize>
+      </font>
+     </property>
     </widget>
-    <widget class="QLabel" name="BalanceStatus">
+    <widget class="QLabel" name="TdaStatus">
      <property name="geometry">
       <rect>
-       <x>290</x>
-       <y>20</y>
+       <x>250</x>
+       <y>30</y>
        <width>51</width>
        <height>31</height>
       </rect>
@@ -801,12 +807,12 @@
       <string>STATUS</string>
      </property>
     </widget>
-    <widget class="QLabel" name="MonitorStatus">
+    <widget class="QLabel" name="YahooStatus">
      <property name="geometry">
       <rect>
-       <x>200</x>
-       <y>20</y>
-       <width>71</width>
+       <x>300</x>
+       <y>30</y>
+       <width>61</width>
        <height>31</height>
       </rect>
      </property>
@@ -817,11 +823,37 @@
     <widget class="QTableWidget" name="BalanceTable">
      <property name="geometry">
       <rect>
-       <x>290</x>
+       <x>10</x>
        <y>60</y>
-       <width>161</width>
-       <height>211</height>
+       <width>351</width>
+       <height>201</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="TdaStatus_2">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>20</y>
+       <width>51</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TDA</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="TdaStatus_3">
+     <property name="geometry">
+      <rect>
+       <x>300</x>
+       <y>20</y>
+       <width>51</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Yahoo</string>
      </property>
     </widget>
    </widget>

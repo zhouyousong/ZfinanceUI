@@ -10,8 +10,9 @@ import datetime
 from ftplib import FTP
 import pandas
 import pandas as pd
-import yfinance,efinance
+import efinance
 import glob
+from joblib import Parallel,delayed
 
 import ZBaseFunc
 import Zfinance
@@ -58,6 +59,7 @@ TempColorGray = 4
 ScrollBarPosition = 0
 
 GlobalAPP = None
+GlobalProcessCnt = 0
 class DownloadUIProc:
     def __init__(self,GlobalUI,APP,GlobalFavorEditorUI):
         global GlobalMainUI,CfgDict,TableWidgetChannel,DownloadProcessBarChannel,GlobalDLUI,GlobalAPP
@@ -195,8 +197,8 @@ class DownloadUIProc:
         # self.DownloadCfgUI.UpdateTickerList.setDisabled(False)
 
     def HandleDownloadPeriod(self):
-        DownloadPeriod_x = ZfinanceCfg.PeriodDict['PeriodStrPara'][self.DownloadCfgUI.DownloadPeriod.value()]
-        self.DownloadCfgUI.ShowPeriod.setText(ZfinanceCfg.PeriodDict['PeriodStr'][self.DownloadCfgUI.DownloadPeriod.value()])
+        DownloadPeriod_x = self.PeriodDictList[self.DownloadCfgUI.DownloadPeriod.value()]
+        self.DownloadCfgUI.ShowPeriod.setText(self.PeriodDictList[self.DownloadCfgUI.DownloadPeriod.value()])
       #  QLabel.setText()
 
     def LoadSelectMarket(self,SelectList):
@@ -216,17 +218,24 @@ class DownloadUIProc:
         ZFavorEditor.LoadFavorListCfg(self.DownloadCfgUI.FavorList, CheckBox=True)
 
         self.DownloadCfgUI.show()
+        self.PeriodDictList =[]
+        for key,value in ZfinanceCfg.Period2DayLenthDict.items():
+            self.PeriodDictList.append(key)
 
-        self.DownloadCfgUI.DownloadPeriod.setMaximum(len(ZfinanceCfg.PeriodDict['PeriodStr'])-1)
+        self.DownloadCfgUI.DownloadPeriod.setMaximum(len(self.PeriodDictList)-1)
         self.DownloadCfgUI.DownloadPeriod.setMinimum(0)
         self.DownloadCfgUI.DownloadPeriod.setTickInterval(1)
+        self.DownloadCfgUI.ShowPeriod.setText(self.PeriodDictList[self.DownloadCfgUI.DownloadPeriod.value()])
         if(not self.DLUIInit):
             self.DownloadCfgUI.MulitThreadDL.addItems(ZfinanceCfg.MulitThreadList_c)
             self.DownloadCfgUI.SkipPeriod.addItems(ZfinanceCfg.SkipPeriodList_c)
             self.DownloadCfgUI.ReConnect.addItems(ZfinanceCfg.ReConnectList_c)
             self.DownloadCfgUI.TimeOut.addItems(ZfinanceCfg.TimeOutList_c)
+            self.DownloadCfgUI.DownloadAPI.addItems(ZfinanceCfg.DownloadAPIList_c)
+
             self.HandleOpenDLConfig(Default=True)
             self.DLUIInit = True
+
 
 
 
@@ -258,18 +267,19 @@ class DownloadUIProc:
         CfgDict['FunAna_Splits_x']  = self.DownloadCfgUI.FunAna_Splits.isChecked()
 
 
-        CfgDict['DownloadPeriod_x'] = ZfinanceCfg.PeriodDict['PeriodStrPara'][self.DownloadCfgUI.DownloadPeriod.value()]
+        CfgDict['DownloadPeriod_x'] = self.PeriodDictList[self.DownloadCfgUI.DownloadPeriod.value()]
 
         CfgDict['MulitThreadDL_x']  = int(self.DownloadCfgUI.MulitThreadDL.currentText())
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
 
+        CfgDict['DownloadAPI_x'] =  self.DownloadCfgUI.DownloadAPI.currentText()
         CfgDict['ProxyEnable_x']      = self.DownloadCfgUI.ProxyEnable.isChecked()
         CfgDict['ProxyIP_x']        = self.DownloadCfgUI.ProxyIP.text()
         CfgDict['ProxyPort_x']      = self.DownloadCfgUI.ProxyPort.text()
 
         CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
-        CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentIndex())
+        CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentText())
 
         self.DownloadCfgUI.close()
 
@@ -301,12 +311,13 @@ class DownloadUIProc:
         CfgDict['FunAna_Dividends_x']  = self.DownloadCfgUI.FunAna_Dividends.isChecked()
         CfgDict['FunAna_Splits_x']  = self.DownloadCfgUI.FunAna_Splits.isChecked()
 
-        CfgDict['DownloadPeriod_x'] = ZfinanceCfg.PeriodDict['PeriodStrPara'][self.DownloadCfgUI.DownloadPeriod.value()]
+        CfgDict['DownloadPeriod_x'] = self.PeriodDictList[self.DownloadCfgUI.DownloadPeriod.value()]
 
         CfgDict['MulitThreadDL_x']  = int(self.DownloadCfgUI.MulitThreadDL.currentText())
         CfgDict['ReConnectCnt_x']   = int(self.DownloadCfgUI.ReConnect.currentText())
         CfgDict['TimeOut_x']        = int(self.DownloadCfgUI.TimeOut.currentText())
 
+        CfgDict['DownloadAPI_x']    = self.DownloadCfgUI.DownloadAPI.currentText()
         CfgDict['ProxyEnable_x']      = self.DownloadCfgUI.ProxyEnable.isChecked()
         CfgDict['ProxyIP_x']        = self.DownloadCfgUI.ProxyIP.text()
         CfgDict['ProxyPort_x']      = self.DownloadCfgUI.ProxyPort.text()
@@ -314,18 +325,18 @@ class DownloadUIProc:
         CfgDict['SkipPeriod_x']  = int(self.DownloadCfgUI.SkipPeriod.currentText())
         CfgDict['SkipNG_x']      = self.DownloadCfgUI.SkipNG.isChecked()
 
-        ConfigFilePathName ,ok = QFileDialog.getSaveFileName(None, "配置文件保存",'Data/00_Config','ZfinanceCfg (*.ZFCfg)')
+        ConfigFilePathName ,ok = QFileDialog.getSaveFileName(None, "配置文件保存",'Data/00_Config','ZfinanceDownloadCfg (*.ZFdl)')
 
         if ConfigFilePathName == "":
             return
 
         with open(ConfigFilePathName, "w") as f:
-            json.dump(CfgDict, f)
+            json.dump(CfgDict, f,indent=1)
         return
 
     def HandleOpenDLConfig(self,Default = False):
         if Default:
-            ConfigFilePathName = 'Data/00_Config/Default.ZFCfg'
+            ConfigFilePathName = 'Data/00_Config/DefaultDownload.ZFdl'
             if(not os.path.exists(ConfigFilePathName)):
 
                 self.DownloadCfgUI.MarketSelector.setColumnCount(2)
@@ -342,7 +353,7 @@ class DownloadUIProc:
 
                 return
         else:
-            ConfigFilePathName ,ok= QFileDialog.getOpenFileName(None, "选择配置文件",'Data/00_Config','ZfinanceCfg (*.ZFCfg)')
+            ConfigFilePathName ,ok= QFileDialog.getOpenFileName(None, "选择配置文件",'Data/00_Config','ZfinanceDownloadCfg (*.ZFdl)')
             if ConfigFilePathName == "":
                 return
 
@@ -364,11 +375,13 @@ class DownloadUIProc:
             self.DownloadCfgUI.FunAna_Dividends.setChecked(CfgDict['FunAna_Dividends_x'])
             self.DownloadCfgUI.FunAna_Splits.setChecked(CfgDict['FunAna_Splits_x'])
 
-            self.DownloadCfgUI.DownloadPeriod.setValue(ZfinanceCfg.PeriodDict['PeriodStrPara'].index(CfgDict['DownloadPeriod_x']))
+            self.DownloadCfgUI.DownloadPeriod.setValue(self.PeriodDictList.index(CfgDict['DownloadPeriod_x']))
 
             self.DownloadCfgUI.MulitThreadDL.setCurrentIndex(ZfinanceCfg.MulitThreadList_c.index(str(CfgDict['MulitThreadDL_x'])))
             self.DownloadCfgUI.ReConnect.setCurrentIndex(ZfinanceCfg.ReConnectList_c.index(str(CfgDict['ReConnectCnt_x'])))
             self.DownloadCfgUI.TimeOut.setCurrentIndex(ZfinanceCfg.TimeOutList_c.index(str(CfgDict['TimeOut_x'])))
+
+            self.DownloadCfgUI.DownloadAPI.setCurrentIndex(ZfinanceCfg.DownloadAPIList_c.index(str(CfgDict['DownloadAPI_x'])))
 
             self.DownloadCfgUI.ProxyEnable.setChecked(CfgDict['ProxyEnable_x'])
             self.DownloadCfgUI.ProxyIP.setText(CfgDict['ProxyIP_x'])
@@ -418,79 +431,62 @@ def HandleDownloadAbort():
 
 
 def HandleDownloadStart():
-    global DownloadAbortFlag,GlobalDLUI
+    global DownloadAbortFlag,GlobalDLUI,GlobalProcessCnt
     global Process,ProcessLen, GlobalMainUI,TableInitFlag,CfgDict,VPN,ScrollBarPosition
     DownloadAbortFlag = False
     Process = 0
     PeriodLimitlList = []
-    IntervialAndPeriodList = []
-    FunAnaList = []
+    KlineIntervialAndPeriodDictList = []
+    BaseInfoList = []
     GlobalMainUI.SymbolsDownloadStart.setDisabled(True)
     GlobalAPP.processEvents()
 
     if  CfgDict == dict():
-        ConfigFilePathName = 'Data/00_Config/Default.ZFCfg'
+        ConfigFilePathName = 'Data/00_Config/DefaultDownload.ZFdl'
         with open(ConfigFilePathName, 'r') as load_f:
             CfgDict = json.load(load_f)
 
     DownloadPeriod = CfgDict['DownloadPeriod_x']
-    Period2Days = ZfinanceCfg.PeriodDict['Period2Days'][ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod)]
-
+    DayLenth = ZfinanceCfg.Period2DayLenthDict[DownloadPeriod]
     if CfgDict['Intervial_1Day_x']:
-        IntervialAndPeriodList.append(['1d',DownloadPeriod,Period2Days])
+        KlineIntervialAndPeriodDictList.append({'Interval': '1d','Period' : DayLenth} )
     if CfgDict['Intervial_1h_x']:
-        if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('2y'):
-            IntervialAndPeriodList.append(['1h', '2y',20])
-        else:
-            IntervialAndPeriodList.append(['1h', DownloadPeriod,Period2Days])
-
+        KlineIntervialAndPeriodDictList.append({'Interval': '60m','Period': DayLenth})
     if CfgDict['Intervial_30min_x']:
-        if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['30m', '60d',20])
-        else:
-            IntervialAndPeriodList.append(['30m', DownloadPeriod,Period2Days])
+        KlineIntervialAndPeriodDictList.append({'Interval': '30m','Period': DayLenth})
     if CfgDict['Intervial_15min_x']:
-        if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['15m', '60d',20])
-        else:
-            IntervialAndPeriodList.append(['15m', DownloadPeriod,Period2Days])
+        KlineIntervialAndPeriodDictList.append({'Interval': '15m','Period': DayLenth})
     if CfgDict['Intervial_5min_x']:
-        if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('60d'):
-            IntervialAndPeriodList.append(['5m', '60d',20])
-        else:
-            IntervialAndPeriodList.append(['5m', DownloadPeriod,Period2Days])
+        KlineIntervialAndPeriodDictList.append({'Interval': '5m','Period': DayLenth})
     if CfgDict['Intervial_1min_x']:
-        if ZfinanceCfg.PeriodDict['PeriodStrPara'].index(DownloadPeriod) > ZfinanceCfg.PeriodDict['PeriodStrPara'].index('5d'):
-            IntervialAndPeriodList.append(['1m', '5d',3])
-        else:
-            IntervialAndPeriodList.append(['1m', DownloadPeriod,Period2Days])
+        KlineIntervialAndPeriodDictList.append({'Interval': '1m','Period': DayLenth})
+
 
 #    Info Financials Balancesheet Cashflow Dividends Splits
     if CfgDict['FunAna_Info_x']:
-        FunAnaList.append('inf')
-    if CfgDict['FunAna_Financials_x']:
-        FunAnaList.append('fin')
+        BaseInfoList.append('inf')
+    if CfgDict['FunAna_Financials_x'] == True:
+        BaseInfoList.append('fin')
     if CfgDict['FunAna_Balancesheet_x']:
-        FunAnaList.append('bal')
+        BaseInfoList.append('bal')
     if CfgDict['FunAna_Cashflow_x']:
-        FunAnaList.append('cas')
+        BaseInfoList.append('cas')
     if CfgDict['FunAna_Dividends_x']:
-        FunAnaList.append('div')
+        BaseInfoList.append('div')
     if CfgDict['FunAna_Splits_x']:
-        FunAnaList.append('spl')
+        BaseInfoList.append('spl')
 
     ReConnectCnt = CfgDict['ReConnectCnt_x']
 
     if CfgDict['ProxyEnable_x']:
-        VPN = ZfinanceCfg.PROXYEN
         VPN = 'http://'+CfgDict['ProxyIP_x']+':'+CfgDict['ProxyPort_x']
+        ZBaseFunc.SetDLAPIPara(key='PROXY',value=VPN)
     else:
         VPN = None
-    #http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs
-
+        ZBaseFunc.SetDLAPIPara(key='PROXY', value=None)
 
     SymbolsList = []
-    CNTickerList = pd.read_csv('Data\\00_Config\\CNTickerList.csv', sep=',',dtype={'股票代码':str})
+    CNTickerList = pd.read_csv('Data\\00_Config\\CNTickerList.csv', sep=',',dtype={'股票代码':str})#http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs
     HKTickerList = pd.read_csv('Data\\00_Config\\HKTickerList.csv', sep=',',dtype={'股票代码':str})
     USTickerList = pd.read_csv('Data\\00_Config\\USTickerList.csv', sep=',',dtype={'股票代码':str})
 
@@ -501,7 +497,6 @@ def HandleDownloadStart():
     if CfgDict['EX_CN-SHZ_x']:
         Temp = CNTickerList.loc[CNTickerList['市场类型'].isin(['深A'])]
         SymbolsList.extend([str(i)+'.sz' for i in Temp['股票代码'].tolist() ])
-
 
     if CfgDict['EX_HK_x']:
         Temp = HKTickerList['股票代码'].tolist()
@@ -529,7 +524,6 @@ def HandleDownloadStart():
             sym = i.split('.')
             if int(sym[0]) == 107:
                 SymbolsList.append(sym[1])
-
 #############
     if CfgDict['List_Favor_x']:
         cursor = QTreeWidgetItemIterator(GlobalDLUI.FavorList)
@@ -562,7 +556,6 @@ def HandleDownloadStart():
             except:
                 pass
 ############################
-
     ProcessLen = len(SymbolsList)
     ZBaseFunc.Log2LogBox('SymbolsList count ='+str(ProcessLen))
     GlobalMainUI.SymbolsDownloadProgressBar.setValue(0)
@@ -577,7 +570,7 @@ def HandleDownloadStart():
         TableInitFlag = True
         GlobalMainUI.SymbolsDownloadTable.clear()
         GlobalMainUI.SymbolsDownloadTable.setRowCount(0)
-        GlobalMainUI.SymbolsDownloadTable.setColumnCount(len(IntervialAndPeriodList)+len(FunAnaList)+1)
+        GlobalMainUI.SymbolsDownloadTable.setColumnCount(len(KlineIntervialAndPeriodDictList)+len(BaseInfoList)+1)
         GlobalMainUI.SymbolsDownloadTable.setRowCount(ProcessLen)
         GlobalMainUI.SymbolsDownloadTable.verticalHeader().setVisible(False)
         #GlobalMainUI.SymbolsDownloadTable.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
@@ -595,300 +588,224 @@ def HandleDownloadStart():
         GlobalMainUI.SymbolsDownloadTable.setColumnWidth(0, 55)
 
         Col = 1
-        for i in range(len(IntervialAndPeriodList)+len(FunAnaList)):
+        for i in range(len(KlineIntervialAndPeriodDictList)+len(BaseInfoList)):
             GlobalMainUI.SymbolsDownloadTable.setColumnWidth(Col,25)
             Col = Col+1
         Temp = ['SYM']
-        for i in IntervialAndPeriodList:
-            Temp.append(i[0])
-        for i in FunAnaList:
+        for i in KlineIntervialAndPeriodDictList:
+            Temp.append(i['Interval'])
+        for i in BaseInfoList:
             Temp.append(i)
         GlobalMainUI.SymbolsDownloadTable.setHorizontalHeaderLabels(Temp)
     GlobalAPP.processEvents()
     ThreadNum =  CfgDict['MulitThreadDL_x']
-    ProcessLen = ProcessLen*ThreadNum
-    TimeStamp = str(int(time.time()))
-    # GlobalMainUI.SymbolsDownloadTable.verticalScrollBar().setValue(10)
-    # return
-    try:
-        SYM = Zfinance.SingleStockQuotations('AAPL')
-        Tempdf = SYM.FetchHistoryData(period='5d', interval='1d',PROXY=VPN)
-        NewFileEndTime = int(Tempdf.index[-1].strftime("%Y%m%d"))
-    except:
+
+    SYM = ZBaseFunc.StockSymbolData(Platfrom=CfgDict['DownloadAPI_x'],Symbol='AAPL')
+    Result = SYM.DownloadSymbolHistoryData(Period=30,Interval='1d')
+    if Result['Success']:
+        NewFileEndTime = int(datetime.datetime.fromtimestamp(Result['TimeStamp']).strftime("%Y%m%d"))
+    else:
         ZBaseFunc.Log2LogBox('Can not start Download,please check Network!')
         GlobalMainUI.SymbolsDownloadStart.setDisabled(False)
         return
+    thread = Thread(target=ThreadingOfDownload,args=(ThreadNum,
+                                                    SymbolsList,
+                                                    CfgDict['DownloadAPI_x'],5,NewFileEndTime,
+                                                    KlineIntervialAndPeriodDictList,
+                                                    BaseInfoList,
+                                                    CfgDict['ReConnectCnt_x'],
+                                                    CfgDict['SkipPeriod_x'],
+                                                    CfgDict['SkipNG_x'],
+                                                    DownloadProcessBarChannel))
 
-    global ThreadCnt
-    ThreadCnt = ThreadNum
-    for i in range(ThreadNum):
-        thread = Thread(target=DownloadThread,
-                        args=(SymbolsList,IntervialAndPeriodList,FunAnaList,i,ReConnectCnt,TimeStamp,NewFileEndTime)
-                        )
-        thread.start()
-    pass
+    thread.start()
 
-ProcessLocker = threading.Lock()
-CreatFolderLocker   = threading.Lock()
-CreatInUseLocker   = threading.Lock()
-InfoWriteLocker   = threading.Lock()
+def ThreadingOfDownload(ThreadNum,
+                       SymbolsList,
+                       Platfrom ,
+                       Timeout,
+                       NewFileEndTime ,
+                       KlineIntervialAndPeriodDictList ,
+                       BaseInfoList ,
+                       ReConnectCnt ,
+                       SkipLenth ,
+                       SkipNG ,
+                       PrgressSignal):
+    global GlobalProcessCnt
+
+    #ThreadNum = 1
+    GlobalProcessCnt = 0
+    Parallel(n_jobs=ThreadNum,backend='threading')(delayed(DownloadThread)(Symbol = Symbol,
+                                                       Platfrom = Platfrom,
+                                                       Timeout = Timeout,
+                                                       NewFileEndTime = NewFileEndTime,
+                                                       CurrRow = SymbolsList.index(Symbol),
+                                                       KlineIntervialAndPeriodDictList = KlineIntervialAndPeriodDictList,
+                                                       BaseInfoList = BaseInfoList,
+                                                       ReConnectCnt = ReConnectCnt,
+                                                       SkipLenth = SkipLenth,
+                                                       SkipNG = SkipNG,
+                                                       PrgressSignal = PrgressSignal) for Symbol in SymbolsList)
+
+    GlobalMainUI.SymbolsDownloadStart.setDisabled(False)
+    GlobalMainUI.SymbolsDownloadAbort.setDisabled(False)
 
 
 def DeleteUselessOKNG(FolderPath):
     for i in glob.glob(FolderPath+'/TAG_*'):
         os.remove(i)
 
+def DownloadThread(Symbol,
+                   Platfrom,
+                   Timeout,
+                   NewFileEndTime=None,
+                   CurrRow = 0,
+                   KlineIntervialAndPeriodDictList=[],
+                   BaseInfoList=[],
+                   ReConnectCnt=1,
+                   SkipLenth = 0,
+                   SkipNG = True,
+                   PrgressSignal = None):
+    global GlobalMainUI, DownloadAbortFlag,ScrollBarPosition
+    global TempColorGreen, TempColorYellow, TempColorRed
+
+    if (CurrRow > ScrollBarPosition):
+        ScrollBarPosition = CurrRow
+        if ScrollBarPosition > 5:
+            GlobalMainUI.SymbolsDownloadTable.verticalScrollBar().setValue(ScrollBarPosition - 4)
 
 
-def DownloadThread(SymbolsList=[],IntervialAndPeriodList = [],FunAnaList = [],ThreadIndex = 0,ReConnectCnt = 1,TimeStamp='',NewFileEndTime=None):
-    global GlobalMainUI, DownloadProcessBarChannel,DownloadAbortFlag,Process,ScrollBarPosition
-    global TempColorGreen, TempColorYellow, TempColorRed,VPN,ThreadCnt,TickersInfo
 
+    TimeStamp = str(int(time.time()))
     RootDir = 'Data/01_TickerDatabase/'
-    TempRow = -1
+    if DownloadAbortFlag:   #停止下载
+        PrgressSignal.PBarSignal.emit(CurrRow + 1)
+        return
+    TempFolderPath = RootDir + Symbol
+    if (not os.path.exists(TempFolderPath)):
+        try:
+            os.mkdir(TempFolderPath)
+        except:
+            ZBaseFunc.Log2LogBox('Creat Folder ['+TempFolderPath+'] Failed,Please check access Permission')
+    OKFilePath = TempFolderPath + '/TAG_OK_' + TimeStamp
+    NGFilePath = TempFolderPath + '/TAG_NG_' + TimeStamp
+    TempCol = 0
+    OKFLAG = True
+    DeleteUselessOKNG(TempFolderPath)
+    for KlineIntervialAndPeriod in KlineIntervialAndPeriodDictList:
+        TempCol += 1
+        TempIntervial   = KlineIntervialAndPeriod['Interval']
+        TempPeriod      = KlineIntervialAndPeriod['Period']
+        TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorYellow)
 
-    for Symbol in SymbolsList:
+        for ReConnectCnt_i in range(ReConnectCnt):
 
-        TempRow += 1
-        if(TempRow>ScrollBarPosition):
-            ScrollBarPosition = TempRow
-            if ScrollBarPosition>5:
-                GlobalMainUI.SymbolsDownloadTable.verticalScrollBar().setValue(ScrollBarPosition-4)
-
-        ProcessLocker.acquire()
-        Process += 1
-        ProcessLocker.release()
-        if DownloadAbortFlag:
-            break
-        TempFolderPath = RootDir + Symbol
-        CreatFolderLocker.acquire()
-        if (not os.path.exists(TempFolderPath)):
-            try:
-                os.mkdir(TempFolderPath)
-            except:
-                continue
-        CreatFolderLocker.release()
-
-        OKFilePath = TempFolderPath + '/TAG_OK_' + TimeStamp
-        NGFilePath = TempFolderPath + '/TAG_NG_' + TimeStamp
-        InUseFilePath = TempFolderPath + '/InUse'
-
-        if os.path.exists(OKFilePath) or os.path.exists(NGFilePath):
-            continue
-        else:
-            CreatInUseLocker.acquire()
-            if(not os.path.exists(InUseFilePath)):
-                open(InUseFilePath,'w').close()
-                TempPath = ZBaseFunc.GetCompleteFileName(Path=TempFolderPath + '/TAG_NG_')
-                if TempPath != None:
-                    LastNGDate = int(datetime.datetime.fromtimestamp(int(TempPath.split('NG_')[1])).strftime("%Y%m%d"))
-                DeleteUselessOKNG(TempFolderPath)       #删除之前的NG OK标签
-                CreatInUseLocker.release()
+            if TempPeriod == 0:     #MAX
+                NewFileStartTime = 19000101
             else:
-                CreatInUseLocker.release()
-                continue
-            TempCol = 0
-            OKFLAG = True
-            for IntervialAndPeriodList_i in IntervialAndPeriodList:
-                TempCol += 1
-                TempIntervial   = IntervialAndPeriodList_i[0]
-                TempPeriod      = IntervialAndPeriodList_i[1]
-                TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorYellow)
+                NewFileStartTime = int((datetime.datetime.now() - datetime.timedelta(days=TempPeriod)).strftime("%Y%m%d"))
 
-                for ReConnectCnt_i in range(ReConnectCnt):
-                    if(IntervialAndPeriodList_i[0] == 'Cur'):
-                        #######################################
-                        # if(GetInfoData(IntervialAndPeriodList_i[0])):
-                        #     TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)
-                        # else:
-                        #     TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)
-                        #     OKFLAG = False
-                        # continue
-                        ##########################
-                        try:
-                            TickerInfo = pd.read_csv(TempFolderPath+'/'+Symbol+'_Info.csv')
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)
-                            continue
-                        except:
-                            pass
-                        try:
-                            SYM = yfinance.Ticker(Symbol)
-                            TickerCurrentInfo = SYM.get_info(proxy=VPN)
-                            TickerCurrentInfo['UpdateTime'] = datetime.datetime.now().strftime('%Y-%m-%d')
-                            TickerInfo = pd.DataFrame([TickerCurrentInfo])
-                            TickerInfo.set_index(['symbol'], inplace=True)
-                            TickerInfo.to_csv(TempFolderPath + '/' + Symbol + '_Info.csv', sep=',',index_label='symbol')
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)
-                            continue
-                        except:
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)
-                            OKFLAG = False
-                            continue
-                    TempPath = ZBaseFunc.GetCompleteFileName(Path = TempFolderPath + '/' + Symbol + "_" + IntervialAndPeriodList_i[0])
-                    NewVsSkipPeriodFileEndTime = int((datetime.datetime.strptime(str(NewFileEndTime), "%Y%m%d") - datetime.timedelta(days=CfgDict['SkipPeriod_x'])*3).strftime("%Y%m%d"))
-                    if IntervialAndPeriodList_i[2] == -1:
-                        NewFileStartTime = 19000101
-                    else:
-                        NewFileStartTime = int((datetime.datetime.now() - datetime.timedelta(days=IntervialAndPeriodList_i[2])).strftime("%Y%m%d"))
+            LastFileName = ZBaseFunc.GetCompleteFileName(Path=TempFolderPath + '/' + Symbol + "_" + TempIntervial)
+            Tempdf_Exist = pd.DataFrame()
+            if(LastFileName != None):                                                                                   #如果已经有文件存在
+                ExistFileStartTime  = int(LastFileName.split('_')[2])
+                ExistFileEndTime    = int(LastFileName.split('_')[3])
+                if LastFileName.split('_')[4] == 'max.csv':
+                    ExistFileStartTime = 190000000
 
-                    if(TempPath != None):
-                        ExistFileStartTime  = int(TempPath.split('_')[2])
-                        ExistFileEndTime    = int(TempPath.split('_')[3])
-                        if ((TempPath.split('_')[4] == 'max.csv')and (ExistFileEndTime>=NewVsSkipPeriodFileEndTime)) or\
-                        ((ExistFileStartTime<=NewFileStartTime) and (ExistFileEndTime>=NewVsSkipPeriodFileEndTime)):        #如果已存在文件范围比要下载的大
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)               #不再下载，直接标绿色
-                            continue                                                                            #退出此次循环
-                        Tempdf_Exist = pd.read_csv(TempFolderPath + '/' + TempPath, sep=',', index_col='DateTime')
+                if SkipNG:
+                    LastNGFile = ZBaseFunc.GetCompleteFileName(Path=TempFolderPath + '/TAG_NG_')
+                    if LastNGFile != None:
+                        ExistFileEndTime = int(datetime.datetime.fromtimestamp(int(LastNGFile.split('NG_')[1])).strftime("%Y%m%d"))
 
-                    else:
-                        if CfgDict['SkipNG_x']:
-                            try:
-                                if(LastNGDate > NewVsSkipPeriodFileEndTime):
-                                    OKFLAG = False
-                                    TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)               #不再下载，直接标红色
-                                    continue                                                                            #退出此次循环
-                            except:
-                                pass
-                        ExistFileEndTime = ExistFileStartTime = NewFileEndTime
-                    try:
-                        SYM = Zfinance.SingleStockQuotations(Symbol)
-                        NewFileStartTimeStr = str(NewFileStartTime)
-                        NewFileEndTimeStr   = str(NewFileEndTime)
-                        if(ExistFileStartTime<NewFileStartTime<ExistFileEndTime):
-                            Tempstr_list = list(str(ExistFileEndTime))
-                            Tempstr_list.insert(4,'-')
-                            Tempstr_list.insert(7, '-')
-                            Temp = ''.join(Tempstr_list)
-                            Tempdf = SYM.FetchHistoryData(start=Temp, interval=TempIntervial,PROXY=VPN)
+                NewExistEndTime = int((datetime.datetime.strptime(str(ExistFileEndTime), "%Y%m%d") + datetime.timedelta(SkipLenth)).strftime("%Y%m%d"))
+                if (ExistFileStartTime<=NewFileStartTime) and (NewExistEndTime>=NewFileEndTime):                        #已有文件已经包含了要下载的数据段
+                    TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorGreen)                               #直接标绿色，退出
+                    break
+                Tempdf_Exist = pd.read_csv(TempFolderPath + '/' + LastFileName, sep=',', index_col='DateTime')
+                TempPeriod = CalcReasonablePeriod(ExistFileStartTime,ExistFileEndTime,NewFileStartTime,NewFileEndTime,TempPeriod)
+            SYMBOL = ZBaseFunc.StockSymbolData(Symbol=Symbol, Platfrom=Platfrom)
 
-                        else:
-                            Tempdf = SYM.FetchHistoryData(period=TempPeriod,interval=TempIntervial,PROXY=VPN)
-                            Tempdf_Exist = pd.DataFrame()
+            HistorydfDict = SYMBOL.DownloadSymbolHistoryData(Period=TempPeriod,Interval=TempIntervial,timeout=Timeout)
+            if HistorydfDict['Success']:
 
-                        if (len(Tempdf) != 0):
-                            if(TempIntervial == '1d'):
-                                Tempdf.index = Tempdf.index.strftime("%Y-%m-%d")
-                            else:
-                                Tempdf.index = Tempdf.index.strftime("%Y-%m-%d %H:%M")
-                            Tempdf = Tempdf_Exist.append(Tempdf)
-                            Tempdf = Tempdf[~Tempdf.index.duplicated(keep='last')]
+                Tempdf = Tempdf_Exist.append(HistorydfDict['DataFrame'])
+                Tempdf = Tempdf[~Tempdf.index.duplicated(keep='last')]
 
-                            NewFileStartTimeStr = Tempdf.index[0][:10].replace('-','')
-                            NewFileEndTimeStr   = Tempdf.index[-1][:10].replace('-','')
+                NewFileStartTimeStr = Tempdf.index[0][:10].replace('-','')
+                NewFileEndTimeStr   = Tempdf.index[-1][:10].replace('-','')
 
-
-                            TempSYMFileName = TempFolderPath + '/' + Symbol + "_" + str(TempIntervial) + "_" + \
-                                              NewFileStartTimeStr + '_' + NewFileEndTimeStr + '_'+TempPeriod+'.csv'
-                            try:
-                                os.remove(TempFolderPath + '/' + TempPath)
-                            except:
-                                pass
-                            Tempdf.to_csv(TempSYMFileName, sep=',', index_label='DateTime')
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)
-                        else:
-                            TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)
-                            OKFLAG = False
-                    except:
-                        ZBaseFunc.Log2LogBox('Download Fail : <' + Symbol + "_" + str(TempIntervial) + "_" + \
-                                              NewFileStartTimeStr + '_' + NewFileEndTimeStr + '_'+TempPeriod+'.csv'+'> Failed')
-                        TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)
-                        OKFLAG = False
-            for FunAnaList_i in FunAnaList:
-                TempCol += 1
-                TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorYellow)
-                if GetFunAnaData(TempFolderPath=TempFolderPath, Symbol=Symbol, FuncType=FunAnaList_i, VPN=VPN):
-                    TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorGreen)
+                if TempPeriod == 0:                                                                                     ###给加_30d，或者_max后缀
+                    TempPeriodStr = 'max'
                 else:
-                    TableWidgetChannel.TableSignal.emit(TempRow, TempCol, TempColorRed)
+                    TempPeriodStr = str(TempPeriod) + 'd'
+
+                TempSYMFileName = TempFolderPath + '/' + Symbol + "_" + str(TempIntervial) + "_" + \
+                                  NewFileStartTimeStr + '_' + NewFileEndTimeStr + '_'+TempPeriodStr+'.csv'
+                try:
+                    os.remove(TempFolderPath + '/' + LastFileName)
+                except:
+                    pass
+                Tempdf.to_csv(TempSYMFileName, sep=',', index_label='DateTime')
+                TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorGreen)
+                break
+            else:
+                TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorRed)
+                ZBaseFunc.Log2LogBox('Download Fail : <' + Symbol + "_" + TempIntervial+'> Failed')
+                if ReConnectCnt_i == ReConnectCnt-1:
                     OKFLAG = False
 
-            if OKFLAG:
-                FlagPath = OKFilePath
-            else:
-                FlagPath = NGFilePath
-            try:
-                open(FlagPath,'w').close()
-            except:
-                pass
+    for BaseFinInfo in BaseInfoList:
+        TempCol += 1
+        TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorYellow)
+        if BaseFinInfo == 'inf':
+            BaseInfoDataframe = SYMBOL.DownloadSymbolBaseInfoData()
+        else:
+            BaseInfoDataframe = SYMBOL.DownloadSymbolFinanceData(BaseFinInfo)
+        if BaseInfoDataframe['Success']:
+            BaseInfoDataframe['DataFrame'].to_csv(TempFolderPath + '/' + Symbol + '_' + BaseFinInfo + '.csv', sep=',',
+                                                  index_label='symbol')
+            TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorGreen)
+        else:
+            TableWidgetChannel.TableSignal.emit(CurrRow, TempCol, TempColorRed)
+            OKFLAG = False
 
+    if OKFLAG:
+        FlagPath = OKFilePath
+    else:
+        FlagPath = NGFilePath
+    try:
+        open(FlagPath,'w').close()
+    except:
+        pass
 
-            os.remove(InUseFilePath)
-        DownloadProcessBarChannel.PBarSignal.emit(Process)
-    ThreadCnt-=1
-    if ThreadCnt == 0:
-        GlobalMainUI.SymbolsDownloadStart.setDisabled(False)
-        GlobalMainUI.SymbolsDownloadAbort.setDisabled(False)
-        GlobalAPP.processEvents()
-
-
-
-import enum
+    PrgressSignal.PBarSignal.emit(CurrRow + 1)
+    return
 
 class SignalThreadChannel(QObject):
     TableSignal = Signal(int,int,int)
     PBarSignal = Signal(int)
     LPBarSignal = Signal(pd.DataFrame)
 
+def CalcReasonablePeriod(ExistFileStartTime,ExistFileEndTime,NewFileStartTime,NewFileEndTime,TempPeriod):
+    if NewFileStartTime < ExistFileStartTime:
+        return TempPeriod
+    else:
+        TempPeriod = (datetime.datetime.strptime(str(NewFileEndTime), "%Y%m%d") - datetime.datetime.strptime(str(ExistFileEndTime), "%Y%m%d")).days
+        for key,value in ZfinanceCfg.Period2DayLenthDict.items():
+            if value >= TempPeriod:
+                TempPeriod = value
+
+                return TempPeriod
+
 def UpdateListProcessBarWidget(df = pandas.DataFrame()):
     df.to_csv('Data/00_Config/TickerList.csv',sep=',')
 
-def GetFunAnaData(TempFolderPath='',Symbol ='',FuncType = 'inf',VPN=''):
-    if  (ZBaseFunc.GetCompleteFileName(TempFolderPath + '/' + Symbol + '_' + FuncType) != None):
-        return True
-    try:
-        SYM = yfinance.Ticker(Symbol)
-        if FuncType == 'inf':
-            TickerFunAnaData = SYM.get_info(proxy=VPN)
-            TickerFunAnaData['UpdateTime'] = datetime.datetime.now().strftime('%Y-%m-%d')
-            TickerFunAnaDataDF = pd.DataFrame([TickerFunAnaData])
-            TickerFunAnaDataDF.set_index(['symbol'], inplace=True)
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'.csv', sep=',', index_label='symbol')
-        elif FuncType == 'fin':
-            TickerFunAnaData = SYM.get_financials(proxy=VPN,freq='quarterly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_quarterly.csv', sep=',')
-
-            TickerFunAnaData = SYM.get_financials(proxy=VPN,freq='yearly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_yearly.csv', sep=',')
-
-        elif FuncType == 'bal':
-            TickerFunAnaData = SYM.get_balancesheet(proxy=VPN,freq='quarterly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_quarterly.csv', sep=',')
-
-            TickerFunAnaData = SYM.get_balancesheet(proxy=VPN,freq='yearly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_yearly.csv', sep=',')
-
-        elif FuncType == 'cas':
-            TickerFunAnaData = SYM.get_cashflow(proxy=VPN,freq='quarterly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_quarterly.csv', sep=',')
-
-            TickerFunAnaData = SYM.get_cashflow(proxy=VPN,freq='yearly').stack().unstack(0)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'_yearly.csv', sep=',')
-
-        elif FuncType == 'div':
-            TickerFunAnaData = SYM.get_dividends(proxy=VPN)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'.csv', sep=',')
-        elif FuncType == 'spl':
-            TickerFunAnaData = SYM.get_splits(proxy=VPN)
-            TickerFunAnaDataDF = TickerFunAnaData
-            TickerFunAnaDataDF.to_csv(TempFolderPath + '/' + Symbol + '_'+FuncType+'.csv', sep=',')
-        else:
-            return False
-        return True
-    except:
-        return False
-
-
-
 def UpdateDownloadProcessBarWidget(Process):
-    global  GlobalMainUI,ProcessLen
-    GlobalMainUI.SymbolsDownloadProgressBar.setValue(Process / ProcessLen * 100)
+    global  GlobalMainUI,ProcessLen,GlobalProcessCnt
+
+    GlobalProcessCnt +=1
+    GlobalMainUI.SymbolsDownloadProgressBar.setValue(GlobalProcessCnt / ProcessLen * 100)
 
 def UpdateTableWidget(row,col,color):
     global GlobalMainUI,TempColorGreen,TempColorYellow,TempColorRed

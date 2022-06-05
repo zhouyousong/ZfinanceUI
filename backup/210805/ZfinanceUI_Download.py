@@ -233,7 +233,7 @@ class DownloadUIProc:
             return
 
         with open(ConfigFilePathName, "w") as f:
-            json.dump(CfgDict, f)
+            json.dump(CfgDict, f,indent=1)
 
         self.GlobalMainUI.SymbolsDownloadLog.setText('HandleSaveDLConfig!!'+ConfigFilePathName[0])
         return

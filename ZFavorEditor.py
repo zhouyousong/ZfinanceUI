@@ -128,10 +128,6 @@ class FavorEditorUIProc:
 
         if(len(SelectList) == 0):
 
-            NasdaqTickerList = pd.read_csv('Data\\00_Config\\NasdaqTickerList.csv', sep='|')
-            NyseAmexTickerList = pd.read_csv('Data\\00_Config\\NyseAmexTickerList.csv', sep='|')
-
-
 
             USTickerList = pd.read_csv('Data\\00_Config\\USTickerList.csv', sep=',',dtype={'股票代码':str})
             HKTickerList = pd.read_csv('Data\\00_Config\\HKTickerList.csv', sep=',',dtype={'股票代码':str})
@@ -223,7 +219,6 @@ class FavorEditorUIProc:
                 TempParent = currNode.parent()
                 TempParent.removeChild(currNode)
 
-
     def HandleSaveFavorList(self):
         FavorDict=dict()
         cursor = QTreeWidgetItemIterator(self.FavorEditorUI.FavorList)
@@ -241,6 +236,6 @@ class FavorEditorUIProc:
 
         FavorListFilePathName = os.getcwd() + '\\Data\\00_Config\\DefaultFavor.ZFfv'
         with open(FavorListFilePathName, "w") as f:
-            json.dump(FavorDict, f)
+            json.dump(FavorDict, f,indent=1)
         pass
 

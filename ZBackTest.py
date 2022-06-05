@@ -1,5 +1,8 @@
 import copy
 import random
+
+import pandas
+
 import ZfinanceUI_Download
 from PySide2.QtWidgets import QApplication, QMessageBox,QFileDialog
 from PySide2.QtUiTools import QUiLoader
@@ -8,11 +11,9 @@ import multiprocessing
 import multiprocessing as mp
 from threading import Thread
 import ZFavorEditor
-import ZBaseFunc
-import ZfinanceCfg
+import ZBaseFunc,ZStrategy,ZfinanceCfg
 import pandas as pd
 import ZFunAna
-import ZBackTest
 import json,os
 from PySide2.QtGui import QFont
 from PySide2.QtWidgets import *
@@ -98,383 +99,84 @@ def SignelBackTestingErorrCallBack(e):
 def SignelBackTestingCallBack(SymbolResult):
     global GlobalMainUI
 
-    number_of_rows = GlobalMainUI.BackTestTable.rowCount()
-    number_of_columns = GlobalMainUI.BackTestTable.columnCount()
-
-    for Row in range(number_of_rows):
-        if SymbolResult["Symbol"] == GlobalMainUI.BackTestTable.item(Row,0).text():
-            break
-
-#    UILock.acquire()
-    for key, value in SymbolResult.items():
-        if key == "Symbol":
-            continue
-        else:
-
-            for Col in range(1, number_of_columns):
-                if key ==  GlobalMainUI.BackTestTable.horizontalHeaderItem(Col).text():
-                    StrShow = PySide2.QtWidgets.QTableWidgetItem(SymbolResult[key])
-                    GlobalMainUI.BackTestTable.setItem(Row, Col, StrShow)
-
-#    UILock.release()
-
+    ZBaseFunc.DisplayInTable(GlobalMainUI.BackTestTable,SymbolResult)
     ZBaseFunc.Log2LogBox(SymbolResult["Symbol"] + " BackTest Finished!")
 
     if ChildProcessMonitor() == 0:
         SingleBackTestMultiProcessFinished()
 
-def SignelBackTesting(Symbol,paras):
-        global GlobalMainUI
-
-        BackTestDict = paras['BackTestDict']
-        RSITP = paras['RSITP']
-        AEMATP = paras['AEMATP']
-        LastIndex = paras['LastIndex']
-        TrendGate = paras['TrendGate']
-        RaiseScaleInTrendUp = paras['RaiseScaleInTrendUp']
-        FallScaleInTrendUp = paras['FallScaleInTrendUp']
-        ElimitInTrendup = paras['ElimitInTrendup']
-        RaiseScaleInTrendNo = paras['RaiseScaleInTrendNo']
-        FallScaleInTrendNo = paras['FallScaleInTrendNo']
-        ElimitInTrendNo = paras['ElimitInTrendNo']
-        TrendDnLen = paras['TrendDnLen']
-        RaiseScaleInTrendDn = paras['RaiseScaleInTrendDn']
-        FallScaleInTrendDn = paras['FallScaleInTrendDn']
-        ElimitInTrendDn = paras['ElimitInTrendDn']
-        TrendDnRatio = paras['TrendDnRatio']
-        TempFolderPath = paras['TempFolderPath']
-        ClosureRatio = paras['ClosureRatio']
-        StopLossRate = paras['StopLossRate']
-        RSISellLimit = paras['RSISellLimit']
-        LockBuyLen = paras['LockBuyLen']
-
-        print(Symbol + " Start")
+def SymbolBackTesting(Symbol, StrategyParas,ResultFolderPath):
+    ActionList = []
+    FlPLList = []
+    StdPLList = []
+    FixPLList = []
+    DrawParaDict = StrategyParas
 
 
-        # time.sleep(random.random())
-        # Val = dict()
-        # Val["Symbol"] = Symbol
-        # Val["Start"] = "StartDate"
-        # Val["End"] = "EndDate"
-        # Val["FlPL"] = "str(round(FlPLList[-1],2))+'$'"
-        # Val["StdPL"] = "str(round(StdPLList[-1],2))+'%'"
-        # Val["FixPL"] = "str(round(FixPLList[-1],2))+'%'"
-        #
-        #
-        # return Val
-
-        #读取数据
-
-        FileName = ZBaseFunc.GetCompleteFileName('Data/01_TickerDatabase/' + Symbol + '/' + Symbol + '_5m')
-        if FileName == None:
-
-            Val = dict()
-            Val["Symbol"] = Symbol
-            Val["Start"] = "FileName"
-            Val["End"] = "FileName"
-            Val["FlPL"] = "FileName"
-            Val["StdPL"] = "FileName"
-            Val["FixPL"] = "FileName"
-            return Val
-        else:
-            Tempdf = pd.read_csv('Data/01_TickerDatabase/' + Symbol + '/' + FileName, sep=',', index_col='DateTime')
-            cnt = int(BackTestDict["BackTestDayCount"]["Length"] * 192)
-            Tempdf = Tempdf.iloc[-cnt:-1]
-
-        StartDate = Tempdf.index[0]
-        EndDate = Tempdf.index[-1]
-
-        AEMA = list()
-        RSI = list()
-
-        highLowLength = 10
-        Tempdf['LowPriceMin'] = Tempdf["Low"].rolling(highLowLength).min()
-        Tempdf['HighPriceMax'] = Tempdf["High"].rolling(highLowLength).max()
-        Tempdf.dropna(inplace=True)
-
-        for i in range(3):
-            TP = RSITP[i]
-            RSI.append(talib.RSI(Tempdf["Close"], timeperiod=TP))
-        for i in range(3):
-            Tempdf['RSI_[' + str(RSITP[i]) + ']'] = RSI[i]
-
-        for i in range(6):
-#            self.GlobalMainUI.FunAnaGroupProgressBar.setValue(i*20)
-            length = AEMATP[i]
-            multiplier1 = 2/(length+1)
-
-            Tempdf['multiplier2'] = abs((Tempdf["Close"] - Tempdf['LowPriceMin']) -
-                                        (Tempdf['HighPriceMax'] - Tempdf["Close"])) / \
-                                    (Tempdf['HighPriceMax'] - Tempdf['LowPriceMin'])
-            Tempdf['alpha'] = multiplier1 * (1+Tempdf['multiplier2']).fillna(0)
-            result = sum(Tempdf["Close"].tolist()[0:length-1])/length
-
-            AMA = [np.nan for j in range(length)]
-            for k in range(length,len(Tempdf)):
-                result = result+ Tempdf.iat[k,-1]*(Tempdf.iat[k,3]-result)
-                AMA.append(result)
-
-            AEMA.append(AMA)
-        for i in range(6):
-            Tempdf['AEMA_[' + str(AEMATP[i]) + ']'] = AEMA[i]
-
-        Tempdf['TrendVal'] = Tempdf['AEMA_[' + str(AEMATP[5]) + ']'].diff()
-        Tempdf.dropna(inplace=True)
+    Interval = StrategyParas["BackTestPeriod&Interval"]["Interval"]
+    Period = StrategyParas["BackTestPeriod&Interval"]["Period"]
 
 
+    InitOHLCVDataFrame = ZStrategy.GetSymbolInitOHLCV(Symbol=Symbol,                    # 读取初始数据            --系统
+                                                      Period=Period,
+                                                    Interval=Interval,
+                                                  OnlineMode=False)
 
-        ThisTradingStatus = ZfinanceCfg.TradingStatu.Watch
+    USRStrategy = ZStrategy.OpenStrategysPlatform(InitOHLCVDataFrame, StrategyParas)    # 创建开放策略平台对象       --系统
+    InitResult = USRStrategy.CalcInitIndicators()                                       # 计算初始指数数据（原始数据） **用户编写**
+    SymbolEquity = ZStrategy.EquityPlatform(ShareVol=100,
+                                            StartPrice=InitResult["StartPrice"])        # 计算初始指数数据（原始数据） **用户编写**
 
-        FlCAP  = 0
-        FlPLList  = list()
-        StdPLList = list()
-        FixPLList = list()
+    HeadPt          = InitResult["SkipLength"]                                          # 前面多少个数据要跳过运算
+    TailPt          = InitResult["Length"]                                              # 数据总长度
 
-        ActionList = list()
+    ActionList.append({                                                                 # 初始化第一次的状态为观望
+        'TimeStamp': InitResult['StartTime'], 'Value': InitResult['HighPrice'],
+        'Action': ZfinanceCfg.StrategyStatusTag[ZfinanceCfg.TradingStatu.Watch]["Tag"],
+        'Color':  ZfinanceCfg.StrategyStatusTag[ZfinanceCfg.TradingStatu.Watch]["Color"]
+    })
 
-        StopLossPrice = 0
-        SellByRSIFlag = False
-        ProcessCntSum = len(Tempdf)
-        TrendDnCnt = 0
-        DebugStatus = []
-        for i in range(LastIndex):
-            DebugStatus.append(ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][0])
-        try:
-            ActionList.append({
-                'TimeStamp':Tempdf.index.values[0],
-                'Value':Tempdf.iloc[0]['High'],
-                'Action':ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][0],
-                'Color':ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][1]
+    for i in range(HeadPt, TailPt):                                                     # for循环开始迭代计算
+        StrategyResult = USRStrategy.LoopStrategys(i)                                   # 策略计算，输出要按照StrategyResult对上  **用户编写**
+
+        if StrategyResult.FlagStatusChanged:                                            # 如果系统有操作状态的变化
+            ActionList.append({                                                         # 记录操作变化
+                'TimeStamp': StrategyResult.TimeStamp, 'Value': StrategyResult.HighPrice,
+                'Action': ZfinanceCfg.StrategyStatusTag[StrategyResult.TradingStatus]["Tag"],
+                'Color': ZfinanceCfg.StrategyStatusTag[StrategyResult.TradingStatus]["Color"]
             })
-        except:
-            print('help')
-            return
-        RSI = [0,0,0]
-        StartPrice = Tempdf.iloc[0]['Open']
-        StartFun = StartPrice*100
-
-        StdFund = StartFun
-        FlSharesQt = 0
-        StdSharesQt = 0
-
-        for i in range(LastIndex, ProcessCntSum):
-            ClosePrice = Tempdf.iloc[i]['Close']
-            OpenPrice  = Tempdf.iloc[i]['Open']
-            TimeStamp = Tempdf.index[i]
-            AEMA[0] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[0]) + ']']
-            AEMA[1] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[1]) + ']']
-            AEMA[2] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[2]) + ']']
-            AEMA[3] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[3]) + ']']
-            AEMA[4] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[4]) + ']']
-            AEMA[5] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[5]) + ']']
-            AEMA_LastOne   = Tempdf.iloc[i-1]['AEMA_[' + str(AEMATP[5]) + ']']
-            AEMA_LastIndex = Tempdf.iloc[i - LastIndex]['AEMA_[' + str(AEMATP[5]) + ']']
+        EquityResult = SymbolEquity.CalcResidualEquity(TradeAction=StrategyResult.TradingStatus,
+                                                               OptPrice=StrategyResult.ClosePrice,
+                                                               ClosePrice=StrategyResult.ClosePrice)
 
 
-            RSI[0] = Tempdf.iloc[i]['RSI_[' + str(RSITP[0]) + ']']
-            RSI[1] = Tempdf.iloc[i]['RSI_[' + str(RSITP[1]) + ']']
-            RSI[2] = Tempdf.iloc[i]['RSI_[' + str(RSITP[2]) + ']']
+        FlPLList.append(EquityResult['Float_PL'])                     # 记录floatprofit盈利变化趋势
+        StdPLList.append(EquityResult['Std_PL_Ratio'])
+        FixPLList.append(EquityResult['Fix_PL_Ratio'])
 
-            Temp = ((AEMA[5] - AEMA_LastOne) / AEMA_LastOne)
-            if Temp > TrendGate:
-                TrendMode = ZfinanceCfg.TrendMode.UP
-            elif Temp  < -TrendGate:
-                TrendMode = ZfinanceCfg.TrendMode.DN
-            else:
-                Temp = ((AEMA[5] - AEMA_LastIndex) / AEMA_LastIndex)
-                if Temp > TrendGate:
-                    TrendMode = ZfinanceCfg.TrendMode.UP
-                elif Temp < -TrendGate:
-                    TrendMode = ZfinanceCfg.TrendMode.DN
-                else:
-                    TrendMode = ZfinanceCfg.TrendMode.NO
+    Zplot.DrawCharts_X(                                                                 # 输出结果显示 ---系统函数
+        Symbol=Symbol,
+        TimeStamp=InitOHLCVDataFrame.index.values.tolist(),
+        KlineData=np.array(InitOHLCVDataFrame.loc[:, ['Open', 'Close', 'Low', 'High']]).tolist(),
+        Volume=InitOHLCVDataFrame['Volume'].tolist(),
+        AEMAData=InitOHLCVDataFrame.loc[:, InitResult["IndictorInKlineDraw"]],
+        TrendVal = InitOHLCVDataFrame['TrendVal'].tolist(),
+        RSIData =InitOHLCVDataFrame.loc[:, InitResult["RSIInDraw"]],
+        ActionList = ActionList,
+        FlPL=FlPLList, StdPL=StdPLList, FixPL=FixPLList, SP500PL=FixPLList,
+        DrawParaDict= DrawParaDict,
+        TempFolderPath=ResultFolderPath
+    )
 
-            if TrendMode == ZfinanceCfg.TrendMode.UP:
-                RaiseScale  =   RaiseScaleInTrendUp
-                FallScale   =   FallScaleInTrendUp
-                Elimit      =   ElimitInTrendup
-            elif TrendMode == ZfinanceCfg.TrendMode.DN:
-                RaiseScale  =   RaiseScaleInTrendDn
-                FallScale   =   FallScaleInTrendDn
-                Elimit      =   ElimitInTrendDn
-            else:
-                RaiseScale  =   RaiseScaleInTrendNo
-                FallScale   =   FallScaleInTrendNo
-                Elimit      =   ElimitInTrendNo
-
-
-
-            # ---------------------------------------------BUYCONDITION------------------------------------------------#
-             #AMA8 > 所有
-            if AEMA[0] > AEMA[1]*RaiseScale and\
-               AEMA[0] > AEMA[2]*RaiseScale and\
-               AEMA[0] > AEMA[3]*RaiseScale and\
-               AEMA[0] > AEMA[4]*RaiseScale and\
-               AEMA[0] > AEMA[5]*RaiseScale :
-                Buycondition_AEMA0UpAll = True
-            else:
-                Buycondition_AEMA0UpAll = False
-
-            # 整体趋势处于下降
-
-            if Tempdf.iloc[i]['TrendVal'] < 0:
-                TrendDnCnt += 1
-            if i >= TrendDnLen+LastIndex:
-                if Tempdf.iloc[i-TrendDnLen]['TrendVal'] < 0:
-                    TrendDnCnt -= 1
-            #print("TDC = "+str(TrendDnCnt)+" |i = "+str(i)+"|TrendVal = "+str(Tempdf.iloc[i]['TrendVal']))
-
-            if TrendDnCnt <0:
-                print("Error TrendDnCnt i=",i)
-            if TrendDnCnt/TrendDnLen *100 > TrendDnRatio:
-                Buycondition_TrendDnRatio = True
-            else:
-                Buycondition_TrendDnRatio = False
-
-            # 三条线接近
-            if abs(AEMA[3] - AEMA[4])+abs(AEMA[3] - AEMA[5]) +abs(AEMA[4] - AEMA[5]) <ClosureRatio*(AEMA[3]+AEMA[4]+AEMA[5]) :
-                Buycondition_ClosureRatio = True
-            else:
-                Buycondition_ClosureRatio = False
-
-            if Buycondition_AEMA0UpAll and Buycondition_TrendDnRatio and Buycondition_ClosureRatio:
-                Buycondition = True
-            else:
-                Buycondition = False
-            #---------------------------------------------^BUYCONDITION^------------------------------------------------#
-
-            #---------------------------------------------SELLCONDITION------------------------------------------------#
-            AMALowerCnt = 0
-            for j in range(1, 5):  # AMA8 > 所有
-                if AEMA[0] < AEMA[j] * FallScale:
-                    AMALowerCnt += 1
-            if AMALowerCnt >=Elimit:
-                SellCondition_AMALowerCnt = True
-            else:
-                SellCondition_AMALowerCnt = False
-
-            if RSI[0] > RSISellLimit:
-                SellCondition_RSI = True
-            else:
-                SellCondition_RSI = False
-
-            if SellCondition_AMALowerCnt or SellCondition_RSI:
-                SellCondition = True
-            else:
-                SellCondition = False
-            #---------------------------------------------^SELLCONDITION^------------------------------------------------#
-
-            if (ThisTradingStatus is ZfinanceCfg.TradingStatu.Buy):
-                FlSharesQt = 100
-                FlCAP = FlCAP - FlSharesQt * OpenPrice
-
-
-                StdSharesQt = round(StdFund/OpenPrice)
-                StdFund = StdFund-StdSharesQt*OpenPrice
-
-                BuyPrice = OpenPrice
-                StopLossPrice = OpenPrice *StopLossRate/ 100
-
-            if (ThisTradingStatus is ZfinanceCfg.TradingStatu.Sell):
-                FlCAP = FlCAP + 100 * OpenPrice
-                FlSharesQt = 0
-
-                StdFund =StdFund + StdSharesQt*OpenPrice
-                StdSharesQt = 0
-
-            if (ThisTradingStatus is ZfinanceCfg.TradingStatu.LockBuy):
-                ReachRelease += 1
-
-
-            FlagStatusChanged = 1
-            #---------------------------------------------状态机跳转------------------------------------------------#
-            if ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Watch) and (Buycondition is True)):                  # 观望且符合买入条件
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.Buy                                                   # 观望转购买
-
-            elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Hold) and (ClosePrice < BuyPrice)):              # 持仓，但价格跌破买入价
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.LockSell                                              # 持仓转锁售
-
-            elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Hold) and (SellCondition is True)):                # 持仓，符合卖出条件（AMA穿过，RSI很高）
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.Sell                                                  # 持仓转清仓
-
-                if SellCondition_RSI :                                                                              # 如果RSI过高
-                    SellByRSIFlag = True                                                                            # 设置RSIFlag
-                    ReachRelease = 0
-            elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Sell) and (SellByRSIFlag is True)):                 # 卖出，且是以为RSI卖出的
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.LockBuy                                               # 卖出转锁买
-
-                SellByRSIFlag = False
-            elif (ThisTradingStatus is   ZfinanceCfg.TradingStatu.Sell):                                            # 卖出
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.Watch                                                 # 清仓转观望
-
-            elif (ThisTradingStatus is  ZfinanceCfg.TradingStatu.Buy):                                              # 买入
-                ThisTradingStatus =  ZfinanceCfg.TradingStatu.Hold                                                  # 买入转持仓
-
-            elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockBuy) and (ReachRelease > LockBuyLen)):        # 锁买期过期
-                ThisTradingStatus  =  ZfinanceCfg.TradingStatu.Watch                                                # 锁买转观望
-
-            elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockSell) and (ClosePrice < StopLossPrice)):    # 锁售，但跌破止损价格
-                ThisTradingStatus   =  ZfinanceCfg.TradingStatu.Sell                                                # 锁售转卖出
-
-            elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockSell) and (ClosePrice > BuyPrice)):         # 锁售，当前价格突破买入价
-                ThisTradingStatus  =  ZfinanceCfg.TradingStatu.Hold                                                 # 锁售转持仓
-
-            else:
-                FlagStatusChanged = 0
-                pass
-            if FlagStatusChanged == 1:
-                ActionList.append({
-                    'TimeStamp': Tempdf.index.values[i],
-                    'Value': Tempdf.iloc[i]['High'],
-                    'Action': ZfinanceCfg.DebugStatusStr[ThisTradingStatus][0],
-                    'Color': ZfinanceCfg.DebugStatusStr[ThisTradingStatus][1]
-                })
-            #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
-
-            # self.GlobalMainUI.FunAnaGroupProgressBar.setValue(i / (ProcessCntSum-1) * 100)
-            # self.GlobalAPP.processEvents()
-            DebugStatus.append(ZfinanceCfg.DebugStatusStr[ThisTradingStatus][0])
-            FlPL = FlCAP + FlSharesQt*ClosePrice
-            StdFundPL = StdFund + StdSharesQt*ClosePrice
-
-            FlPLList.append(FlPL)
-            StdPLList.append((StdFundPL/StartFun-1)*100)
-            FixPLList.append((ClosePrice/StartPrice-1)*100)
-
-        Tempdf['Status'] = DebugStatus
-
-
-        #StdPLSum = StdPLSum+StdPLList[-1]
-        Zplot.DrawCharts(
-            Symbol,
-            Tempdf.index.values.tolist(),
-            np.array(Tempdf.loc[:,['Open','Close','Low','High']]).tolist(),
-            Tempdf['Volume'].tolist(),
-            Tempdf.loc[:,  ['AEMA_[' + str(AEMATP[0]) + ']',
-                            'AEMA_[' + str(AEMATP[1]) + ']',
-                            'AEMA_[' + str(AEMATP[2]) + ']',
-                            'AEMA_[' + str(AEMATP[3]) + ']',
-                            'AEMA_[' + str(AEMATP[4]) + ']',
-                            'AEMA_[' + str(AEMATP[5]) + ']']],
-            Tempdf['TrendVal'].tolist(),
-            Tempdf.loc[:, ['RSI_[' + str(RSITP[0]) + ']',
-                           'RSI_[' + str(RSITP[1]) + ']',
-                           'RSI_[' + str(RSITP[2]) + ']']],
-            ActionList,
-            FlPLList, StdPLList,FixPLList,FixPLList,
-            BackTestDict,
-            TempFolderPath
-        )
-        Val = dict()
-        Val["Symbol"] = Symbol
-        Val["Start"] = StartDate
-        Val["End"] = EndDate
-        Val["FlPL"] = str(round(FlPLList[-1],2))+'$'
-        Val["StdPL"] = str(round(StdPLList[-1],2))+'%'
-        Val["FixPL"] = str(round(FixPLList[-1],2))+'%'
-
-
-        return Val
+    BackTestResult = dict()                                                             # 填入需要在表格里显示的结果数据
+    BackTestResult["Symbol"] = Symbol
+    BackTestResult["Start"] = InitResult["StartTime"]
+    BackTestResult["End"]   = InitResult["EndTime"]
+    BackTestResult["FlPL"] = str(round(FlPLList[-1], 2)) + '$'
+    BackTestResult["StdPL"] = str(round(StdPLList[-1], 2)) + '%'
+    BackTestResult["FixPL"] = str(round(FixPLList[-1], 2)) + '%'
+    BackTestResult["ClosePrice"] = str(round(StrategyResult.ClosePrice , 2)) + '$'
+    return BackTestResult
 
 class SignalThreadChannel(QObject):
     TableSignal = Signal(int,int,int)
@@ -484,7 +186,6 @@ class SignalThreadChannel(QObject):
 def UpdateFunAnaProgressBarWidget(Process):
     global GlobalMainUI
     GlobalMainUI.FunAnaGroupProgressBar.setValue(Process)
-    #.processEvents()
 
 class BackTestProc:
     def __init__(self,GlobalUI,APP):
@@ -533,9 +234,6 @@ class BackTestProc:
         self.GlobalMainUI.StartBackTesting.setDisabled(True)
         self.GlobalMainUI.StartBackTesting.setText("请加入股票")
 
-
- #       self.HandleStartBackTesting()
- #       self.HandleSetBackTestPara()
 
     def HandleOpenGroupBackTestParas(self):
         self.BackTestParaGroups, ok = QFileDialog.getOpenFileNames(None, "选择配置文件", 'Data/00_Config/BackTestParaGroup', '(*.ZFbt)')
@@ -653,7 +351,6 @@ class BackTestProc:
                             Lv2Child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable)
             else:
                 Lv1Child.setText(1, Lv1Val)
-
     def HandleSaveBackTestPara(self):
         cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestPara)
 
@@ -688,8 +385,10 @@ class BackTestProc:
                             else:
                                 if type(self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)]) == float:
                                     self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = float(cursor.value().text(1))
-                                else:
+                                elif type(self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)]) == int:
                                     self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = int(cursor.value().text(1))
+                                elif type(self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)]) == str:
+                                    self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = str(cursor.value().text(1))
                             cursor = cursor.__iadd__(1)
                     else:
                         if cursor.value().text(2) == 'CheckBox':
@@ -707,21 +406,24 @@ class BackTestProc:
                         if cursor.value().text(1) != '':
                             if type(self.BackTestDict[Lv1Key][cursor.value().text(0)]) == float :
                                 self.BackTestDict[Lv1Key][cursor.value().text(0)] = float(cursor.value().text(1))
-                            else:
+                            elif type(self.BackTestDict[Lv1Key][cursor.value().text(0)]) == int:
                                 self.BackTestDict[Lv1Key][cursor.value().text(0)] = int(cursor.value().text(1))
+                            elif type(self.BackTestDict[Lv1Key][cursor.value().text(0)]) == str:
+                                self.BackTestDict[Lv1Key][cursor.value().text(0)] = str(cursor.value().text(1))
                         cursor = cursor.__iadd__(1)
             else:
                 if type(self.BackTestDict[Lv1Key[cursor.value().text(0)]]) == float:
                     self.BackTestDict[Lv1Key[cursor.value().text(0)]] = float(cursor.value().text(1))
-                else:
+                elif type(self.BackTestDict[Lv1Key[cursor.value().text(0)]]) == int:
                     self.BackTestDict[Lv1Key][cursor.value().text(0)] = int(cursor.value().text(1))
+                elif type(self.BackTestDict[Lv1Key[cursor.value().text(0)]]) == str:
+                    self.BackTestDict[Lv1Key][cursor.value().text(0)] = str(cursor.value().text(1))
                 cursor = cursor.__iadd__(1)
 
         BackTestParaFilePathName = os.getcwd() + '\\Data\\00_Config\\DefaultBackTestPara.ZFbt'
         with open(BackTestParaFilePathName, "w") as f:
-            json.dump(self.BackTestDict, f)
+            json.dump(self.BackTestDict, f,indent=1)
         self.BackTestDictGenPara = self.BackTestDict
-
     def HandleGenBackTestParaFiles(self):
 
         self.HandleSaveBackTestPara()
@@ -949,67 +651,6 @@ class BackTestProc:
         BackTestParaFilePathName = TempFolderPath + '\\BackTestPara.ZFbt.json'
         with open(BackTestParaFilePathName, "w") as f:
             json.dump(BackTestDict, f,indent=1)
-        #
-        Row = -1
-        RSITP = [
-            BackTestDict['RSI']['RSI1']['Length'],
-            BackTestDict['RSI']['RSI2']['Length'],
-            BackTestDict['RSI']['RSI3']['Length']
-        ]
-        AEMATP = [
-            BackTestDict['AEMATP']['Length1'],
-            BackTestDict['AEMATP']['Length2'],
-            BackTestDict['AEMATP']['Length3'],
-            BackTestDict['AEMATP']['Length4'],
-            BackTestDict['AEMATP']['Length5'],
-            BackTestDict['AEMATP']['Length6']
-        ]
-        RaiseScaleInTrendUp = BackTestDict['Trading']['TrendUp']['RaiseScale']
-        FallScaleInTrendUp  = BackTestDict['Trading']['TrendUp']['FallScale']
-        ElimitInTrendup     = BackTestDict['Trading']['TrendUp']['Elimit']
-
-        RaiseScaleInTrendDn = BackTestDict['Trading']['TrendDn']['RaiseScale']
-        FallScaleInTrendDn  = BackTestDict['Trading']['TrendDn']['FallScale']
-        ElimitInTrendDn     = BackTestDict['Trading']['TrendDn']['Elimit']
-
-        RaiseScaleInTrendNo = BackTestDict['Trading']['TrendNo']['RaiseScale']
-        FallScaleInTrendNo  = BackTestDict['Trading']['TrendNo']['FallScale']
-        ElimitInTrendNo     = BackTestDict['Trading']['TrendNo']['Elimit']
-
-        LastIndex           = BackTestDict['Trading']['LastIndex']
-        LockBuyLen          = BackTestDict['Trading']['LockBuyLen']
-        StopLossRate        = BackTestDict['Trading']['StopLossRate']
-        TrendDnLen          = BackTestDict['Trading']['TrendDnRatioLen']
-        TrendDnRatio        = BackTestDict['Trading']['TrendDnRatio']
-        ClosureRatio        = BackTestDict['Trading']['ClosureRatio']
-        RSISellLimit        = BackTestDict['Trading']['RSISellLimit']
-        TrendGate           = BackTestDict['Trading']['TrendGate']
-
-        paras = dict()
-
-        paras['BackTestDict'] = BackTestDict
-        paras['RSITP'] = RSITP
-        paras['AEMATP'] = AEMATP
-        paras['LastIndex'] = LastIndex
-        paras['TrendGate'] = TrendGate
-        paras['RaiseScaleInTrendUp'] = RaiseScaleInTrendUp
-        paras['FallScaleInTrendUp'] = FallScaleInTrendUp
-        paras['ElimitInTrendup'] = ElimitInTrendup
-        paras['RaiseScaleInTrendNo'] = RaiseScaleInTrendNo
-        paras['FallScaleInTrendNo'] = FallScaleInTrendNo
-        paras['ElimitInTrendNo'] = ElimitInTrendNo
-        paras['TrendDnLen'] = TrendDnLen
-        paras['RaiseScaleInTrendDn'] = RaiseScaleInTrendDn
-        paras['FallScaleInTrendDn'] = FallScaleInTrendDn
-        paras['ElimitInTrendDn'] = ElimitInTrendDn
-        paras['TrendDnRatio'] = TrendDnRatio
-        paras['TempFolderPath'] = TempFolderPath
-        paras['ClosureRatio'] = ClosureRatio
-        paras['StopLossRate'] = StopLossRate
-        paras['RSISellLimit'] = RSISellLimit
-        paras['LockBuyLen'] = LockBuyLen
-
-        StdPLSum = 0
 
         GlobalResultFilePath = TempFolderPath
 
@@ -1019,371 +660,7 @@ class BackTestProc:
         AsyncResult = []
         for i in  BackTestList:
             j += 1
-            AsyncResult.append(self.p.apply_async(func=SignelBackTesting, args=(i,paras),callback=SignelBackTestingCallBack,error_callback=SignelBackTestingErorrCallBack))
+            AsyncResult.append(self.p.apply_async(func=SymbolBackTesting, args=(i,BackTestDict,TempFolderPath),callback=SignelBackTestingCallBack,error_callback=SignelBackTestingErorrCallBack)),print("SymbolBackTesting")
         GlobalApplyResult = AsyncResult
         self.p.close()
-
-#         ZBaseFunc.Log2LogBox("Backtest Finished")
-
-        # for Symbol in self.BackTestList:
-        #     Row += 1
-        #     #读取数据
-        #     ZBaseFunc.Log2LogBox("Start "+Symbol+" Backtest")
-        #     FileName = ZBaseFunc.GetCompleteFileName('Data/01_TickerDatabase/' + Symbol + '/' + Symbol + '_5m')
-        #     if FileName == None:
-        #         continue
-        #     else:
-        #         Tempdf = pd.read_csv('Data/01_TickerDatabase/' + Symbol + '/' + FileName, sep=',', index_col='DateTime')
-        #         cnt = int(BackTestDict["BackTestDayCount"]["Length"] * 192)
-        #         Tempdf = Tempdf.iloc[-cnt:-1]
-        #
-        #     StartDate = Tempdf.index[0]
-        #     EndDate = Tempdf.index[-1]
-        #
-        #     StartDate = PySide2.QtWidgets.QTableWidgetItem(StartDate.split(" ")[0])
-        #     EndDate   = PySide2.QtWidgets.QTableWidgetItem(EndDate.split(" ")[0])
-        #
-        #     self.GlobalMainUI.BackTestTable.setItem(Row, 1, StartDate)
-        #     self.GlobalMainUI.BackTestTable.setItem(Row, 2, EndDate)
-        #
-        #     AEMA = list()
-        #     RSI = list()
-        #
-        #     highLowLength = 10
-        #     Tempdf['LowPriceMin'] = Tempdf["Low"].rolling(highLowLength).min()
-        #     Tempdf['HighPriceMax'] = Tempdf["High"].rolling(highLowLength).max()
-        #     Tempdf.dropna(inplace=True)
-        #
-        #     ZBaseFunc.Log2LogBox("Start RSI Calc")
-        #     for i in range(3):
-        #         TP = RSITP[i]
-        #         RSI.append(talib.RSI(Tempdf["Close"], timeperiod=TP))
-        #     for i in range(3):
-        #         Tempdf['RSI_[' + str(RSITP[i]) + ']'] = RSI[i]
-        #
-        #     ZBaseFunc.Log2LogBox("Start AEMA Calc")
-        #     for i in range(6):
-        #         self.GlobalMainUI.FunAnaGroupProgressBar.setValue(i*20)
-        #         length = AEMATP[i]
-        #         multiplier1 = 2/(length+1)
-        #
-        #         Tempdf['multiplier2'] = abs((Tempdf["Close"] - Tempdf['LowPriceMin']) -
-        #                                     (Tempdf['HighPriceMax'] - Tempdf["Close"])) / \
-        #                                 (Tempdf['HighPriceMax'] - Tempdf['LowPriceMin'])
-        #         Tempdf['alpha'] = multiplier1 * (1+Tempdf['multiplier2']).fillna(0)
-        #         result = sum(Tempdf["Close"].tolist()[0:length-1])/length
-        #
-        #         AMA = [np.nan for j in range(length)]
-        #         for k in range(length,len(Tempdf)):
-        #             result = result+ Tempdf.iat[k,-1]*(Tempdf.iat[k,3]-result)
-        #             AMA.append(result)
-        #
-        #         AEMA.append(AMA)
-        #     for i in range(6):
-        #         Tempdf['AEMA_[' + str(AEMATP[i]) + ']'] = AEMA[i]
-        #
-        #     Tempdf['TrendVal'] = Tempdf['AEMA_[' + str(AEMATP[5]) + ']'].diff()
-        #     Tempdf.dropna(inplace=True)
-        #
-        #
-        #
-        #     ThisTradingStatus = ZfinanceCfg.TradingStatu.Watch
-        #
-        #     FlCAP  = 0
-        #     FlPLList  = list()
-        #     StdPLList = list()
-        #     FixPLList = list()
-        #
-        #     ActionList = list()
-        #
-        #     StopLossPrice = 0
-        #     SellByRSIFlag = False
-        #     ProcessCntSum = len(Tempdf)
-        #     TrendDnCnt = 0
-        #     DebugStatus = []
-        #     for i in range(LastIndex):
-        #         DebugStatus.append(ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][0])
-        #     try:
-        #         ActionList.append({
-        #             'TimeStamp':Tempdf.index.values[0],
-        #             'Value':Tempdf.iloc[0]['High'],
-        #             'Action':ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][0],
-        #             'Color':ZfinanceCfg.DebugStatusStr[ZfinanceCfg.TradingStatu.Watch][1]
-        #         })
-        #     except:
-        #         print('help')
-        #         continue
-        #     RSI = [0,0,0]
-        #     StartPrice = Tempdf.iloc[0]['Open']
-        #     StartFun = StartPrice*100
-        #
-        #     StdFund = StartFun
-        #     FlSharesQt = 0
-        #     StdSharesQt = 0
-        #     ZBaseFunc.Log2LogBox("Start Auto Trading Calc")
-        #     for i in range(LastIndex, ProcessCntSum):
-        #         ClosePrice = Tempdf.iloc[i]['Close']
-        #         OpenPrice  = Tempdf.iloc[i]['Open']
-        #         TimeStamp = Tempdf.index[i]
-        #         AEMA[0] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[0]) + ']']
-        #         AEMA[1] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[1]) + ']']
-        #         AEMA[2] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[2]) + ']']
-        #         AEMA[3] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[3]) + ']']
-        #         AEMA[4] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[4]) + ']']
-        #         AEMA[5] = Tempdf.iloc[i]['AEMA_[' + str(AEMATP[5]) + ']']
-        #         AEMA_LastOne   = Tempdf.iloc[i-1]['AEMA_[' + str(AEMATP[5]) + ']']
-        #         AEMA_LastIndex = Tempdf.iloc[i - LastIndex]['AEMA_[' + str(AEMATP[5]) + ']']
-        #
-        #
-        #         RSI[0] = Tempdf.iloc[i]['RSI_[' + str(RSITP[0]) + ']']
-        #         RSI[1] = Tempdf.iloc[i]['RSI_[' + str(RSITP[1]) + ']']
-        #         RSI[2] = Tempdf.iloc[i]['RSI_[' + str(RSITP[2]) + ']']
-        #
-        #         Temp = ((AEMA[5] - AEMA_LastOne) / AEMA_LastOne)
-        #         if Temp > TrendGate:
-        #             TrendMode = ZfinanceCfg.TrendMode.UP
-        #         elif Temp  < -TrendGate:
-        #             TrendMode = ZfinanceCfg.TrendMode.DN
-        #         else:
-        #             Temp = ((AEMA[5] - AEMA_LastIndex) / AEMA_LastIndex)
-        #             if Temp > TrendGate:
-        #                 TrendMode = ZfinanceCfg.TrendMode.UP
-        #             elif Temp < -TrendGate:
-        #                 TrendMode = ZfinanceCfg.TrendMode.DN
-        #             else:
-        #                 TrendMode = ZfinanceCfg.TrendMode.NO
-        #
-        #         if TrendMode == ZfinanceCfg.TrendMode.UP:
-        #             RaiseScale  =   RaiseScaleInTrendUp
-        #             FallScale   =   FallScaleInTrendUp
-        #             Elimit      =   ElimitInTrendup
-        #         elif TrendMode == ZfinanceCfg.TrendMode.DN:
-        #             RaiseScale  =   RaiseScaleInTrendDn
-        #             FallScale   =   FallScaleInTrendDn
-        #             Elimit      =   ElimitInTrendDn
-        #         else:
-        #             RaiseScale  =   RaiseScaleInTrendNo
-        #             FallScale   =   FallScaleInTrendNo
-        #             Elimit      =   ElimitInTrendNo
-        #
-        #
-        #
-        #         # ---------------------------------------------BUYCONDITION------------------------------------------------#
-        #          #AMA8 > 所有
-        #         if AEMA[0] > AEMA[1]*RaiseScale and\
-        #            AEMA[0] > AEMA[2]*RaiseScale and\
-        #            AEMA[0] > AEMA[3]*RaiseScale and\
-        #            AEMA[0] > AEMA[4]*RaiseScale and\
-        #            AEMA[0] > AEMA[5]*RaiseScale :
-        #             Buycondition_AEMA0UpAll = True
-        #         else:
-        #             Buycondition_AEMA0UpAll = False
-        #
-        #         # 整体趋势处于下降
-        #
-        #         if Tempdf.iloc[i]['TrendVal'] < 0:
-        #             TrendDnCnt += 1
-        #         if i >= TrendDnLen+LastIndex:
-        #             if Tempdf.iloc[i-TrendDnLen]['TrendVal'] < 0:
-        #                 TrendDnCnt -= 1
-        #         #print("TDC = "+str(TrendDnCnt)+" |i = "+str(i)+"|TrendVal = "+str(Tempdf.iloc[i]['TrendVal']))
-        #
-        #         if TrendDnCnt <0:
-        #             print("Error TrendDnCnt i=",i)
-        #         if TrendDnCnt/TrendDnLen *100 > TrendDnRatio:
-        #             Buycondition_TrendDnRatio = True
-        #         else:
-        #             Buycondition_TrendDnRatio = False
-        #
-        #         # 三条线接近
-        #         if abs(AEMA[3] - AEMA[4])+abs(AEMA[3] - AEMA[5]) +abs(AEMA[4] - AEMA[5]) <ClosureRatio*(AEMA[3]+AEMA[4]+AEMA[5]) :
-        #             Buycondition_ClosureRatio = True
-        #         else:
-        #             Buycondition_ClosureRatio = False
-        #
-        #         if Buycondition_AEMA0UpAll and Buycondition_TrendDnRatio and Buycondition_ClosureRatio:
-        #             Buycondition = True
-        #         else:
-        #             Buycondition = False
-        #         #---------------------------------------------^BUYCONDITION^------------------------------------------------#
-        #
-        #         #---------------------------------------------SELLCONDITION------------------------------------------------#
-        #         AMALowerCnt = 0
-        #         for j in range(1, 5):  # AMA8 > 所有
-        #             if AEMA[0] < AEMA[j] * FallScale:
-        #                 AMALowerCnt += 1
-        #         if AMALowerCnt >=Elimit:
-        #             SellCondition_AMALowerCnt = True
-        #         else:
-        #             SellCondition_AMALowerCnt = False
-        #
-        #         if RSI[0] > RSISellLimit:
-        #             SellCondition_RSI = True
-        #         else:
-        #             SellCondition_RSI = False
-        #
-        #         if SellCondition_AMALowerCnt or SellCondition_RSI:
-        #             SellCondition = True
-        #         else:
-        #             SellCondition = False
-        #         #---------------------------------------------^SELLCONDITION^------------------------------------------------#
-        #
-        #         if (ThisTradingStatus is ZfinanceCfg.TradingStatu.Buy):
-        #             FlSharesQt = 100
-        #             FlCAP = FlCAP - FlSharesQt * OpenPrice
-        #
-        #
-        #             StdSharesQt = round(StdFund/OpenPrice)
-        #             StdFund = StdFund-StdSharesQt*OpenPrice
-        #
-        #             BuyPrice = OpenPrice
-        #             StopLossPrice = OpenPrice *StopLossRate/ 100
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Buy:'+str(OpenPrice))
-        #         if (ThisTradingStatus is ZfinanceCfg.TradingStatu.Sell):
-        #             FlCAP = FlCAP + 100 * OpenPrice
-        #             FlSharesQt = 0
-        #
-        #             StdFund =StdFund + StdSharesQt*OpenPrice
-        #             StdSharesQt = 0
-        #
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Sell:'+str(OpenPrice))
-        #         if (ThisTradingStatus is ZfinanceCfg.TradingStatu.LockBuy):
-        #             ReachRelease += 1
-        #
-        #
-        #         FlagStatusChanged = 1
-        #         #---------------------------------------------状态机跳转------------------------------------------------#
-        #         if ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Watch) and (Buycondition is True)):                  # 观望且符合买入条件
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.Buy                                                   # 观望转购买
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Watch -> Buy')
-        #         elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Hold) and (ClosePrice < BuyPrice)):              # 持仓，但价格跌破买入价
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.LockSell                                              # 持仓转锁售
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Hold -> LockSell')
-        #         elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Hold) and (SellCondition is True)):                # 持仓，符合卖出条件（AMA穿过，RSI很高）
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.Sell                                                  # 持仓转清仓
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Hold -> Sell')
-        #             if SellCondition_RSI :                                                                              # 如果RSI过高
-        #                 SellByRSIFlag = True                                                                            # 设置RSIFlag
-        #                 ReachRelease = 0
-        #         elif ((ThisTradingStatus is ZfinanceCfg.TradingStatu.Sell) and (SellByRSIFlag is True)):                 # 卖出，且是以为RSI卖出的
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.LockBuy                                               # 卖出转锁买
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Sell -> LockBuy')
-        #             SellByRSIFlag = False
-        #         elif (ThisTradingStatus is   ZfinanceCfg.TradingStatu.Sell):                                            # 卖出
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.Watch                                                 # 清仓转观望
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Sell -> Watch')
-        #         elif (ThisTradingStatus is  ZfinanceCfg.TradingStatu.Buy):                                              # 买入
-        #             ThisTradingStatus =  ZfinanceCfg.TradingStatu.Hold                                                  # 买入转持仓
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|Buy -> Hold')
-        #         elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockBuy) and (ReachRelease > LockBuyLen)):        # 锁买期过期
-        #             ThisTradingStatus  =  ZfinanceCfg.TradingStatu.Watch                                                # 锁买转观望
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|LockBuy -> Watch')
-        #         elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockSell) and (ClosePrice < StopLossPrice)):    # 锁售，但跌破止损价格
-        #             ThisTradingStatus   =  ZfinanceCfg.TradingStatu.Sell                                                # 锁售转卖出
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|LockSell -> Sell')
-        #         elif ((ThisTradingStatus is  ZfinanceCfg.TradingStatu.LockSell) and (ClosePrice > BuyPrice)):         # 锁售，当前价格突破买入价
-        #             ThisTradingStatus  =  ZfinanceCfg.TradingStatu.Hold                                                 # 锁售转持仓
-        #             ZBaseFunc.Log2LogBox(TimeStamp+'|LockSell -> Hold')
-        #         else:
-        #             FlagStatusChanged = 0
-        #             pass
-        #         if FlagStatusChanged == 1:
-        #             ActionList.append({
-        #                 'TimeStamp': Tempdf.index.values[i],
-        #                 'Value': Tempdf.iloc[i]['High'],
-        #                 'Action': ZfinanceCfg.DebugStatusStr[ThisTradingStatus][0],
-        #                 'Color': ZfinanceCfg.DebugStatusStr[ThisTradingStatus][1]
-        #             })
-        #         #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
-        #
-        #         self.GlobalMainUI.FunAnaGroupProgressBar.setValue(i / (ProcessCntSum-1) * 100)
-        #         self.GlobalAPP.processEvents()
-        #         DebugStatus.append(ZfinanceCfg.DebugStatusStr[ThisTradingStatus][0])
-        #         FlPL = FlCAP + FlSharesQt*ClosePrice
-        #         StdFundPL = StdFund + StdSharesQt*ClosePrice
-        #
-        #         FlPLList.append(FlPL)
-        #         StdPLList.append((StdFundPL/StartFun-1)*100)
-        #         FixPLList.append((ClosePrice/StartPrice-1)*100)
-        #
-        #     ZBaseFunc.Log2LogBox("Stop Backtest")
-        #     Tempdf['Status'] = DebugStatus
-        #
-        #     FPLRow = 3
-        #     FlPLShow = PySide2.QtWidgets.QTableWidgetItem(str(round(FlPLList[-1],2))+'$')
-        #     self.GlobalMainUI.BackTestTable.setItem(Row, FPLRow, FlPLShow)
-        #
-        #     StdPLRow = 4
-        #     StdPLShow = PySide2.QtWidgets.QTableWidgetItem(str(round(StdPLList[-1],2))+'%')
-        #     self.GlobalMainUI.BackTestTable.setItem(Row, StdPLRow, StdPLShow)
-        #
-        #     FixPLRow = 5
-        #     FixPLShow = PySide2.QtWidgets.QTableWidgetItem(str(round(FixPLList[-1],2))+'%')
-        #     self.GlobalMainUI.BackTestTable.setItem(Row, FixPLRow, FixPLShow)
-        #
-        #     StdPLSum = StdPLSum+StdPLList[-1]
-        #     Zplot.DrawCharts(
-        #         Symbol,
-        #         Tempdf.index.values.tolist(),
-        #         np.array(Tempdf.loc[:,['Open','Close','Low','High']]).tolist(),
-        #         Tempdf['Volume'].tolist(),
-        #         Tempdf.loc[:,  ['AEMA_[' + str(AEMATP[0]) + ']',
-        #                         'AEMA_[' + str(AEMATP[1]) + ']',
-        #                         'AEMA_[' + str(AEMATP[2]) + ']',
-        #                         'AEMA_[' + str(AEMATP[3]) + ']',
-        #                         'AEMA_[' + str(AEMATP[4]) + ']',
-        #                         'AEMA_[' + str(AEMATP[5]) + ']']],
-        #         Tempdf['TrendVal'].tolist(),
-        #         Tempdf.loc[:, ['RSI_[' + str(RSITP[0]) + ']',
-        #                        'RSI_[' + str(RSITP[1]) + ']',
-        #                        'RSI_[' + str(RSITP[2]) + ']']],
-        #         ActionList,
-        #         FlPLList, StdPLList,FixPLList,FixPLList,
-        #         BackTestDict,
-        #         TempFolderPath
-        #     )
-        #
-        #     if self.StopFlag == True:
-        #         return
-        # BackTestResultDf = ZBaseFunc.dataframe_generation_from_table(self.GlobalMainUI.BackTestTable)
-        # BackTestResultDf.to_csv(TempFolderPath+'\\BTResult.csv', sep=',',index_label='SYM')
-        # time.sleep(0.1)
-        #
-        # PLandFolderName = TempFolderPath.replace(TempFolderPath.split('\\')[-1],'{:.4g}'.format(StdPLSum)+'_'+TempFolderPath.split('\\')[-1])
-        #
-        # os.rename(TempFolderPath, PLandFolderName)
-        #
-        # print(BackTestResultDf)
-
-        pass
-
-    # def CleanTable(self):
-    #     self.GlobalMainUI.BackTestTable.clear()
-    #     self.GlobalMainUI.BackTestTable.setRowCount(len(self.BackTestList))
-    #     self.GlobalMainUI.BackTestTable.setColumnCount(len(ZfinanceCfg.BackTestTableColumeItem) + 1)
-    #
-    #     self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
-    #     self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
-    #     self.GlobalMainUI.BackTestTable.setFont(QFont('song', 8))
-    #     self.GlobalMainUI.BackTestTable.horizontalHeader().setFont(QFont('song', 8))
-    #     self.GlobalMainUI.BackTestTable.verticalScrollBar().setValue(0)
-    #     Row = 0
-    #     for i in self.BackTestList:
-    #         SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
-    #         self.GlobalMainUI.BackTestTable.setRowHeight(Row, 5)
-    #         self.GlobalMainUI.BackTestTable.setItem(Row, 0, SymbolsInTable)
-    #         Row = Row + 1
-    #
-    #     self.GlobalMainUI.BackTestTable.setColumnWidth(0, 40)
-    #
-    #     Col = 1
-    #     for i in range(len(ZfinanceCfg.BackTestTableColumeItem)):
-    #         self.GlobalMainUI.BackTestTable.setColumnWidth(Col, 60)
-    #         Col = Col + 1
-    #     self.GlobalMainUI.BackTestTable.setColumnWidth(1, 80)
-    #     self.GlobalMainUI.BackTestTable.setColumnWidth(2, 80)
-    #     Temp = ['SYM']
-    #     for i in ZfinanceCfg.BackTestTableColumeItem:
-    #         Temp.append(i)
-    #     self.GlobalMainUI.BackTestTable.setHorizontalHeaderLabels(Temp)
 

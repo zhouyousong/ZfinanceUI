@@ -167,6 +167,6 @@ class FavorEditorUIProc:
             cursor = cursor.__iadd__(1)
 
         with open(self.FavorListFilePathName, "w") as f:
-            json.dump(FavorDict, f)
+            json.dump(FavorDict, f,indent=1)
         pass
 

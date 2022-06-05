@@ -200,17 +200,16 @@ def ZBar3D(PlotItem = dict()):
     page.render("page_default_layout.html")
 
     webbrowser.open(os.getcwd()+'\page_default_layout.html')
-
-def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,ActionList,
-               FlPL,StdPL,FixPL,SP500PL,BackTestDict,TempFolderPath ):
+def DrawCharts_X(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,ActionList,
+               FlPL,StdPL,FixPL,SP500PL,DrawParaDict,TempFolderPath ):
 
     AEMATP = [
-        BackTestDict['AEMATP']['Length1'],
-        BackTestDict['AEMATP']['Length2'],
-        BackTestDict['AEMATP']['Length3'],
-        BackTestDict['AEMATP']['Length4'],
-        BackTestDict['AEMATP']['Length5'],
-        BackTestDict['AEMATP']['Length6']
+        DrawParaDict['AEMATP']['Length1'],
+        DrawParaDict['AEMATP']['Length2'],
+        DrawParaDict['AEMATP']['Length3'],
+        DrawParaDict['AEMATP']['Length4'],
+        DrawParaDict['AEMATP']['Length5'],
+        DrawParaDict['AEMATP']['Length6']
     ]
     RSIDataLen = (len(RSIData))
     RSIName = [
@@ -223,7 +222,7 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,Actio
         RSIData.iloc[:, 1].tolist(),
         RSIData.iloc[:, 2].tolist()
         ]
-    TrendGate = BackTestDict['Trading']['TrendGate']
+    TrendGate = DrawParaDict['Trading']['TrendGate']
     MarkPointList=list()
     for Action in ActionList:
         MarkPointList.append(opts.MarkPointItem(name="自定义标记点", coord=[TimeStamp.index(Action['TimeStamp']),
@@ -585,14 +584,413 @@ def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,Actio
         ),
     )
 
-    if BackTestDict['WebPage']['Save']:
+    if DrawParaDict['WebPage']['Save']:
         grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
 
-        if BackTestDict['WebPage']['AutoOpen']:
+        if DrawParaDict['WebPage']['AutoOpen']:
             webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
 
     else:
-        if BackTestDict['WebPage']['AutoOpen']:
+        if DrawParaDict['WebPage']['AutoOpen']:
+            grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+
+            webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+
+            time.sleep(3)
+            os.remove(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+
+def DrawCharts(Symbol,TimeStamp,KlineData,Volume,AEMAData,TrendVal,RSIData,ActionList,
+               FlPL,StdPL,FixPL,SP500PL,DrawParaDict,TempFolderPath ):
+
+    AEMATP = [
+        DrawParaDict['AEMATP']['Length1'],
+        DrawParaDict['AEMATP']['Length2'],
+        DrawParaDict['AEMATP']['Length3'],
+        DrawParaDict['AEMATP']['Length4'],
+        DrawParaDict['AEMATP']['Length5'],
+        DrawParaDict['AEMATP']['Length6']
+    ]
+    RSIDataLen = (len(RSIData))
+    RSIName = [
+        RSIData.columns[0],
+        RSIData.columns[1],
+        RSIData.columns[2]
+    ]
+    RSIDataList = [
+        RSIData.iloc[:, 0].tolist(),
+        RSIData.iloc[:, 1].tolist(),
+        RSIData.iloc[:, 2].tolist()
+        ]
+    TrendGate = DrawParaDict['Trading']['TrendGate']
+    MarkPointList=list()
+    for Action in ActionList:
+        MarkPointList.append(opts.MarkPointItem(name="自定义标记点", coord=[TimeStamp.index(Action['TimeStamp']),
+                                                                      Action['Value']],value=Action['Action'],
+                                                    itemstyle_opts=opts.ItemStyleOpts(color=Action['Color'])))
+    kline_data = KlineData
+    kline = (
+        Kline()
+            .add_xaxis(xaxis_data=TimeStamp)
+            .add_yaxis(
+            series_name="Kline",
+            y_axis=kline_data,
+            itemstyle_opts=opts.ItemStyleOpts(color="#00da3c", color0="#ec0000"),
+            markpoint_opts=opts.MarkPointOpts(
+                data=MarkPointList
+            ),
+        )
+            .set_global_opts(
+            legend_opts=opts.LegendOpts(
+                is_show=False, pos_bottom=10, pos_left="center",
+            ),
+        )
+    )
+    #########################趋势线分割##############################
+    AEMATrend = AEMAData['AEMA_[' + str(AEMATP[5]) + ']'].tolist()
+    LineOffset = 0.005*(AEMATrend[0]+AEMATrend[-1])/2
+    TrendUp  = ['-' for i in range(len(AEMATrend))]
+    TrendDn  = ['-' for i in range(len(AEMATrend))]
+    TrendNo  = ['-' for i in range(len(AEMATrend))]
+
+    flag = 0
+
+    for i in range(len(AEMATrend)):
+        if TrendVal[i] < -TrendGate:
+            TrendDn[i] = AEMATrend[i]-LineOffset
+            if flag != 1:
+                TrendDn[i-1] = AEMATrend[i-1]-LineOffset
+            flag = 1
+        elif TrendVal[i] < TrendGate:
+            TrendNo[i] = AEMATrend[i]-LineOffset
+            if flag != 0:
+                TrendNo[i-1] = AEMATrend[i-1]-LineOffset
+            flag = 0
+        else:
+            TrendUp[i] = AEMATrend[i]-LineOffset
+            if flag != -1:
+                TrendUp[i-1] = AEMATrend[i-1]-LineOffset
+            flag = -1
+    ################################################################
+    AEMAline = (
+        Line()
+            .add_xaxis(xaxis_data=TimeStamp)
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[0]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[0]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[1]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[1]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[2]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[2]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[3]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[3]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[4]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[4]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            series_name="AdativeEMA"+str(AEMATP[5]),
+            y_axis=AEMAData['AEMA_[' + str(AEMATP[5]) + ']'].tolist(),
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            label_opts=opts.LabelOpts(is_show=False),
+            is_symbol_show=False
+        )
+            .add_yaxis(
+            y_axis=TrendUp,
+            series_name="TrendUp",
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=1),
+            is_symbol_show=False,
+            is_smooth=False,
+            is_hover_animation=False,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+            .add_yaxis(
+            y_axis=TrendNo,
+            series_name="TrendNo",
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=1),
+            is_symbol_show=False,
+            is_smooth=False,
+            is_hover_animation=False,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+            .add_yaxis(
+            y_axis=TrendDn,
+            series_name="TrendDn",
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=1),
+            is_symbol_show=False,
+            is_smooth=False,
+            is_hover_animation=False,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+            .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
+    )
+    ################################################################
+    OverSellValue = 20
+    OverBuyValue  = 80
+
+    OverSellRSI = ['-' for i in range(RSIDataLen)]
+    RegularRSI  = ['-' for i in range(RSIDataLen)]
+    OverBuyRSI  = ['-' for i in range(RSIDataLen)]
+    flag = 0
+
+    for i in range(RSIDataLen):
+        if RSIDataList[0][i] > OverBuyValue:
+            OverBuyRSI[i] = RSIDataList[0][i]
+            if flag == 0:
+                OverBuyRSI[i-1] = RSIDataList[0][i-1]
+            flag = 1
+        elif RSIDataList[0][i] > OverSellValue:
+            RegularRSI[i] = RSIDataList[0][i]
+            if flag != 0:
+                RegularRSI[i-1] = RSIDataList[0][i-1]
+            flag = 0
+        else:
+            OverSellRSI[i] = RSIDataList[0][i]
+            if flag == 0:
+                OverSellRSI[i-1] = RSIDataList[0][i-1]
+            flag = -1
+
+    ################################################################
+    RSIline = (
+        Line()
+            .add_xaxis(xaxis_data=TimeStamp)
+            .add_yaxis(
+                y_axis=OverBuyRSI,
+                series_name="OverBuy:"+RSIName[0],
+                linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+                is_symbol_show=False,
+                #itemstyle_opts=opts.ItemStyleOpts(color="#ec0000"),
+                markline_opts=opts.MarkLineOpts(
+                    data=[opts.MarkLineItem(y=OverBuyValue, name="OverBuy")]
+                ),
+            )
+            .add_yaxis(
+                y_axis=RegularRSI,
+                series_name="Regular:"+RSIName[0],
+                is_smooth=False,
+                is_hover_animation=False,
+                linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+                label_opts=opts.LabelOpts(is_show=False),
+                is_symbol_show=False,
+                #itemstyle_opts=opts.ItemStyleOpts(color="pink"),
+            )
+            .add_yaxis(
+                y_axis=OverSellRSI,
+                series_name="OverSell:"+RSIName[0],
+                linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+                is_symbol_show=False,
+                markline_opts=opts.MarkLineOpts(
+                    data=[opts.MarkLineItem(y=OverSellValue, name="OverSell")]
+                ),
+            )
+            .add_yaxis(
+            y_axis=RSIDataList[1],
+            series_name=RSIName[1],
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            is_symbol_show=False,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+            .add_yaxis(
+            y_axis=RSIDataList[2],
+            series_name=RSIName[2],
+            is_smooth=False,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=1, opacity=1),
+            is_symbol_show=False,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+    )
+
+    VolumeBar = (
+        Bar()
+            .add_xaxis(xaxis_data=TimeStamp)
+            .add_yaxis(
+            series_name="Volume",
+            y_axis=Volume,
+            xaxis_index=1,
+            yaxis_index=1,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+    )
+    PLBar = (
+        Bar()
+            .add_xaxis(xaxis_data=TimeStamp)
+            .add_yaxis(
+            series_name="Float P/L",
+            y_axis=FlPL,
+            yaxis_index=0,
+            label_opts=opts.LabelOpts(is_show=False),
+            )
+            .add_yaxis(
+            series_name="Standard P/L",
+            y_axis=StdPL,
+            yaxis_index=1,
+            label_opts=opts.LabelOpts(is_show=False),
+            )
+            .add_yaxis(
+            series_name="Fixed P/L",
+            y_axis=FixPL,
+            yaxis_index=1,
+            label_opts=opts.LabelOpts(is_show=False),
+            )
+            .add_yaxis(
+            series_name="SP500 P/L",
+            y_axis=SP500PL,
+            yaxis_index=1,
+            label_opts=opts.LabelOpts(is_show=False),
+            )
+       .set_global_opts(
+            yaxis_opts=opts.AxisOpts(
+                type_="value",
+                position="left",
+            ),
+            tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross"),
+        )
+    )
+    # Kline And Line
+    overlap_kline_line = kline.overlap(AEMAline)
+
+    # Grid Overlap + Bar
+    grid_chart = Grid(
+        init_opts=opts.InitOpts(
+            width="1900px",
+            height="900px",
+            animation_opts=opts.AnimationOpts(animation=False),
+            theme=ThemeType.CHALK
+        )
+    )
+    grid_chart.add(
+        overlap_kline_line.set_global_opts(
+            title_opts=opts.TitleOpts(pos_top="2%", title="Kline&AEMA:"+Symbol),
+            datazoom_opts=[
+                opts.DataZoomOpts(
+                    is_show=False,
+                    type_="inside",
+                    xaxis_index=[0, 1 ,2, 3],
+                    range_start=50,
+                    range_end=100,
+                ),
+                opts.DataZoomOpts(
+                    is_show=True,
+                    xaxis_index=[0, 1, 2, 3],
+                    type_="slider",
+                    pos_top="97%",
+                    range_start=98,
+                    range_end=100,
+                ),
+            ],
+            yaxis_opts=opts.AxisOpts(
+                is_scale=True,
+                splitarea_opts=opts.SplitAreaOpts(
+                    is_show=True, areastyle_opts=opts.AreaStyleOpts(opacity=1)
+                ),
+            ),
+            tooltip_opts=opts.TooltipOpts(
+                trigger="axis",
+                axis_pointer_type="cross",
+                background_color="rgba(245, 245, 245, 0.8)",
+                border_width=1,
+                border_color="#ccc",
+                textstyle_opts=opts.TextStyleOpts(color="#000"),
+            ),
+            visualmap_opts=opts.VisualMapOpts(
+                is_show=False,
+                dimension=2,
+                series_index=5,
+                pos_top="10",
+                pos_right="10",
+                is_piecewise=True,
+                pieces=[
+                    {"value": 1, "color": "red"},
+                    {"value": -1, "color": "green"},
+                ],
+            ),
+            axispointer_opts=opts.AxisPointerOpts(
+                is_show=True,
+                link=[{"xAxisIndex": "all"}],
+                label=opts.LabelOpts(background_color="#777"),
+            ),
+            brush_opts=opts.BrushOpts(
+                x_axis_index="all",
+                brush_link="all",
+                out_of_brush={"colorAlpha": 0.1},
+                brush_type="lineX",
+            ),
+            legend_opts=opts.LegendOpts(pos_top="2%"),
+        ),
+        grid_opts=opts.GridOpts(
+            pos_left="4%", pos_right="8%", pos_top="7%",height="40%"
+        ),
+
+    )
+    grid_chart.add(
+        VolumeBar.set_global_opts(title_opts = opts.TitleOpts(pos_top="50%", title="Volume"),
+                                  legend_opts=opts.LegendOpts(pos_top="50%"),),
+        grid_opts=opts.GridOpts(
+            pos_left="4%", pos_right="8%", pos_top="53%", height="7%"
+        ),
+
+
+    )
+    grid_chart.add(
+        RSIline.set_global_opts(title_opts = opts.TitleOpts(pos_top="63%", title="RSI"),
+                                legend_opts=opts.LegendOpts(pos_top="63%"),),
+        grid_opts=opts.GridOpts(
+            pos_left="4%", pos_right="8%", pos_top="66%", height="9%"
+        ),
+
+    ),
+    grid_chart.add(
+        PLBar.set_global_opts(title_opts = opts.TitleOpts(pos_top="78%", title="Profit&Loss"),
+                              legend_opts=opts.LegendOpts(pos_top="78%"),),
+        grid_opts=opts.GridOpts(
+            pos_left="4%", pos_right="8%", pos_top="82%", height="12%"
+        ),
+    )
+
+    if DrawParaDict['WebPage']['Save']:
+        grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+
+        if DrawParaDict['WebPage']['AutoOpen']:
+            webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
+
+    else:
+        if DrawParaDict['WebPage']['AutoOpen']:
             grid_chart.render(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")
 
             webbrowser.open(TempFolderPath+"\\"+ Symbol+"_Kline_RSI_PL.html")

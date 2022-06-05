@@ -1,0 +1,122 @@
+{
+ "33.897290": {
+  "Property": {
+   "StrategyPath": "C:/Yousong/02_Zfinance/ZfinanceUI/Data/00_Config/BackTestParaGroup/2022-06-01 21_52_33/BackTestPara_2022-06-01 21_52_33.897290.ZFbt"
+  },
+  "Children": [],
+  "Checked": true
+ },
+ "33.899285": {
+  "Property": {
+   "StrategyPath": "C:/Yousong/02_Zfinance/ZfinanceUI/Data/00_Config/BackTestParaGroup/2022-06-01 21_52_33/BackTestPara_2022-06-01 21_52_33.899285.ZFbt"
+  },
+  "Children": [
+   {
+    "Key": "AAL",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "AAPL",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "ERJ",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "GE",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "NIO",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "TSP",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "SOHO",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "AHT",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "GSAT",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "EDU",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "PLTR",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "ATOS",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "CRIS",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "MFGP",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   },
+   {
+    "Key": "MITT",
+    "Property": {
+     "StrategyPath": ""
+    },
+    "Checked": true
+   }
+  ],
+  "Checked": true
+ }
+}

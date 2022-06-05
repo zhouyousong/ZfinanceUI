@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>431</width>
-    <height>895</height>
+    <width>671</width>
+    <height>499</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Monitor Parameter Editor</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QTreeWidget" name="MonitorPara">
+   <widget class="QTreeWidget" name="MonitorParaTree">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>290</y>
-      <width>401</width>
+      <x>260</x>
+      <y>10</y>
+      <width>301</width>
       <height>301</height>
      </rect>
     </property>
@@ -29,37 +29,37 @@
      </property>
     </column>
    </widget>
-   <widget class="QPushButton" name="LoadMonitorPara">
+   <widget class="QPushButton" name="AddBackTestPara">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>600</y>
+      <x>580</x>
+      <y>10</y>
       <width>81</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>加载参数</string>
+     <string>添加参数</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="SaveMonitorPara">
+   <widget class="QPushButton" name="SaveMonitorConfigPara">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>600</y>
+      <x>580</x>
+      <y>280</y>
       <width>81</width>
       <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>保存参数</string>
+     <string>保存配置</string>
     </property>
    </widget>
    <widget class="QPushButton" name="CloseMonitorParaEditor">
     <property name="geometry">
      <rect>
-      <x>330</x>
-      <y>800</y>
+      <x>580</x>
+      <y>410</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -68,13 +68,13 @@
      <string>关闭</string>
     </property>
    </widget>
-   <widget class="QTreeWidget" name="MonitorSymbolList">
+   <widget class="QTreeWidget" name="FavorSymbolList">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>10</y>
-      <width>401</width>
-      <height>231</height>
+      <width>221</width>
+      <height>301</height>
      </rect>
     </property>
     <column>
@@ -86,9 +86,9 @@
    <widget class="QPushButton" name="ImportToMonitorTable">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>250</y>
-      <width>71</width>
+      <x>580</x>
+      <y>50</y>
+      <width>81</width>
       <height>31</height>
      </rect>
     </property>
@@ -100,7 +100,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>640</y>
+      <y>320</y>
       <width>191</width>
       <height>20</height>
      </rect>
@@ -115,8 +115,8 @@
    <widget class="QRadioButton" name="TdaAccountMonitorEnable">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>710</y>
+      <x>260</x>
+      <y>320</y>
       <width>161</width>
       <height>20</height>
      </rect>
@@ -131,8 +131,8 @@
    <widget class="QRadioButton" name="TdaTradeRotEnable">
     <property name="geometry">
      <rect>
-      <x>210</x>
-      <y>710</y>
+      <x>450</x>
+      <y>320</y>
       <width>161</width>
       <height>20</height>
      </rect>
@@ -147,9 +147,9 @@
    <widget class="QLineEdit" name="SendMailBoxAddr">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>640</y>
-      <width>111</width>
+      <x>110</x>
+      <y>350</y>
+      <width>121</width>
       <height>20</height>
      </rect>
     </property>
@@ -157,9 +157,9 @@
    <widget class="QLineEdit" name="SendMailBoxPwd">
     <property name="geometry">
      <rect>
-      <x>310</x>
-      <y>670</y>
-      <width>111</width>
+      <x>110</x>
+      <y>380</y>
+      <width>121</width>
       <height>20</height>
      </rect>
     </property>
@@ -167,9 +167,9 @@
    <widget class="QLineEdit" name="TdaAPIOAuthUserID">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>740</y>
-      <width>231</width>
+      <x>410</x>
+      <y>350</y>
+      <width>81</width>
       <height>20</height>
      </rect>
     </property>
@@ -180,8 +180,8 @@
    <widget class="QLabel" name="ShowPeriod_11">
     <property name="geometry">
      <rect>
-      <x>220</x>
-      <y>670</y>
+      <x>20</x>
+      <y>380</y>
       <width>91</width>
       <height>20</height>
      </rect>
@@ -193,8 +193,8 @@
    <widget class="QLabel" name="ShowPeriod_12">
     <property name="geometry">
      <rect>
-      <x>240</x>
-      <y>640</y>
+      <x>40</x>
+      <y>350</y>
       <width>61</width>
       <height>20</height>
      </rect>
@@ -207,7 +207,7 @@
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>670</y>
+      <y>420</y>
       <width>71</width>
       <height>20</height>
      </rect>
@@ -220,8 +220,8 @@
     <property name="geometry">
      <rect>
       <x>110</x>
-      <y>670</y>
-      <width>101</width>
+      <y>420</y>
+      <width>121</width>
       <height>20</height>
      </rect>
     </property>
@@ -229,8 +229,8 @@
    <widget class="QLabel" name="ShowPeriod_14">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>740</y>
+      <x>260</x>
+      <y>350</y>
       <width>141</width>
       <height>20</height>
      </rect>
@@ -242,8 +242,8 @@
    <widget class="QPushButton" name="VerifyTradeConfig">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>800</y>
+      <x>260</x>
+      <y>410</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -255,8 +255,8 @@
    <widget class="QPushButton" name="SaveTradeConfig">
     <property name="geometry">
      <rect>
-      <x>230</x>
-      <y>800</y>
+      <x>490</x>
+      <y>410</y>
       <width>81</width>
       <height>31</height>
      </rect>
@@ -265,24 +265,11 @@
      <string>保存</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="ApplyBackTestPara">
-    <property name="geometry">
-     <rect>
-      <x>250</x>
-      <y>600</y>
-      <width>81</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>应用参数</string>
-    </property>
-   </widget>
    <widget class="QLabel" name="ShowPeriod_15">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>770</y>
+      <x>260</x>
+      <y>380</y>
       <width>141</width>
       <height>20</height>
      </rect>
@@ -294,11 +281,63 @@
    <widget class="QLineEdit" name="TdaAPIRefreshToken">
     <property name="geometry">
      <rect>
-      <x>190</x>
-      <y>770</y>
-      <width>231</width>
+      <x>410</x>
+      <y>380</y>
+      <width>251</width>
       <height>20</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ShowPeriod_16">
+    <property name="geometry">
+     <rect>
+      <x>500</x>
+      <y>350</y>
+      <width>81</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>TDA AccountID</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="TdaAccountID">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>350</y>
+      <width>71</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="LoadMonitorConfigPara">
+    <property name="geometry">
+     <rect>
+      <x>580</x>
+      <y>240</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>加载配置</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="CleanMonitorTable">
+    <property name="geometry">
+     <rect>
+      <x>580</x>
+      <y>90</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>清空监控</string>
     </property>
    </widget>
   </widget>
@@ -307,7 +346,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>431</width>
+     <width>671</width>
      <height>23</height>
     </rect>
    </property>

@@ -1,9 +1,3 @@
-import copy
-import random
-
-import requests
-
-import ZfinanceUI_Download
 from PySide2.QtWidgets import QApplication, QMessageBox,QFileDialog
 from PySide2.QtUiTools import QUiLoader
 
@@ -13,9 +7,6 @@ from threading import Thread
 import ZFavorEditor
 import ZBaseFunc
 import ZfinanceCfg
-import pandas as pd
-import ZFunAna
-import ZBackTest
 import json,os
 from PySide2.QtGui import QFont
 from PySide2.QtWidgets import *
@@ -26,7 +17,7 @@ import numpy as np
 from PySide2.QtCore import *
 from PySide2.QtGui import QCursor
 import time,datetime,copy
-import ZNotify,ZTrader
+import ZNotify,ZTrader,ZStrategy
 
 GlobalMainUI = None
 GlobalApplyResult = []
@@ -47,35 +38,44 @@ class MonitorAndTradeProc:
 
         GlobalMainUI = GlobalUI
         GlobalAPP = APP
+
+
         self.GlobalAPP = APP
         self.GlobalMainUI = GlobalUI
+        self.StrategyPathDict = dict()
 
         self.GlobalMainUI.SetMonitorAndTradePara.clicked.connect(self.HandleSetMonitorAndTradePara)
         self.GlobalMainUI.StartMonitorAndTrade.clicked.connect(self.HandleStartMonitorAndTrade)
 
-        self.GlobalMainUI.BalanceTable.clear()
-        self.GlobalMainUI.BalanceTable.setRowCount(0)
-        self.GlobalMainUI.BalanceTable.setColumnCount(len(ZfinanceCfg.BalanceTableColumeItem) + 1)
 
-        ZBaseFunc.CleanTable(ZfinanceCfg.MonitorTableColumeItem,self.GlobalMainUI.MonitorAndTradeTable)
+        self.BalanceTable           = ZBaseFunc.TableOpt(TargetTable=self.GlobalMainUI.BalanceTable,
+                                                         TableColumeItem= ZfinanceCfg.BalanceTableColumeItem)
+        self.MonitorAndTradeTable   = ZBaseFunc.TableOpt(TargetTable=self.GlobalMainUI.MonitorAndTradeTable,
+                                                         TableColumeItem=ZfinanceCfg.MonitorTableColumeItem)
 
         self.MonitorAndTradeCfgUI = QUiLoader().load('UIDesign\MonitorParaEditor.ui')
 
 
+        self.MonitorAndTradeCfgUI.AddBackTestPara.clicked.connect(self.HandleAddBackTestPara)
+        self.MonitorAndTradeCfgUI.ImportToMonitorTable.clicked.connect(self.HandleImportToMonitorTable)
 
-        self.MonitorAndTradeCfgUI.LoadMonitorPara.clicked.connect(self.HandleLoadBackTestPara)
-        self.MonitorAndTradeCfgUI.ApplyBackTestPara.clicked.connect(self.HandleApplyBackTestPara)
-        self.MonitorAndTradeCfgUI.SaveMonitorPara.clicked.connect(self.HandleSaveMonitorPara)
+        self.MonitorAndTradeCfgUI.CleanMonitorTable.clicked.connect(self.HandleCleanMonitorTable)
+        self.MonitorAndTradeCfgUI.SaveMonitorConfigPara.clicked.connect(self.HandleSaveMonitorAndTradePara)
 
         self.MonitorAndTradeCfgUI.VerifyTradeConfig.clicked.connect(self.HandleVerifyTradeConfig)
         self.MonitorAndTradeCfgUI.SaveTradeConfig.clicked.connect(self.HandleSaveTradeConfig)
         self.MonitorAndTradeCfgUI.CloseMonitorParaEditor.clicked.connect(self.HandleCloseMonitorParaEditor)
 
 
-        self.MonitorAndTradeCfgUI.MonitorSymbolList.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.MonitorAndTradeCfgUI.MonitorSymbolList.customContextMenuRequested[QPoint].connect(self.FavorListChechboxSelectMenu)
+        self.MonitorAndTradeCfgUI.FavorSymbolList.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.MonitorAndTradeCfgUI.FavorSymbolList.customContextMenuRequested[QPoint].connect(self.FavorListChechboxSelectMenu)
 
-        self.MonitorAndTradeCfgUI.ImportToMonitorTable.clicked.connect(self.HandleImportToMonitorTable)
+        self.MonitorAndTradeCfgUI.MonitorParaTree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.MonitorAndTradeCfgUI.MonitorParaTree.customContextMenuRequested[QPoint].connect(self.MonitorParaTreeSelectMenu)
+
+        self.GlobalMainUI.MonitorAndTradeTable.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.GlobalMainUI.MonitorAndTradeTable.customContextMenuRequested[QPoint].connect(self.MonitorAndTradeTableSelectMenu)
+
 
         self.StopFlag = True
 
@@ -88,12 +88,10 @@ class MonitorAndTradeProc:
 
         self.TradeDict       = ZBaseFunc.LoadConfigFile(FileName="DefaultTradePara.ZFtd",DefaultDict=ZfinanceCfg.TradePara)
         self.MonitorParaDict = ZBaseFunc.LoadConfigFile(FileName="DefaultMonitorPara.ZFmt",DefaultDict=ZfinanceCfg.MonitorPara)
-
+        self.TDAAPI = ZTrader.TDAAPIs(OAuthUserID=self.TradeDict["TdaAPIOAuthUserID"],TdaAccountID=self.TradeDict["TdaAccountID"],RefreshToken=self.TradeDict["TdaAPIRefreshToken"])
     def HandleSetMonitorAndTradePara(self):
 
         self.MonitorAndTradeCfgUI.show()
-
-        ZFavorEditor.LoadFavorListCfg(self.MonitorAndTradeCfgUI.MonitorSymbolList, CheckBox=False)
 
         self.MonitorAndTradeCfgUI.MailNotifyEnable.setChecked(self.TradeDict["MailNotifyEnable"])
         self.MonitorAndTradeCfgUI.SendMailBoxAddr.setText(self.TradeDict["SendMailBoxAddr"])
@@ -103,66 +101,17 @@ class MonitorAndTradeProc:
         self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.setChecked(self.TradeDict["TdaAccountMonitorEnable"])
         self.MonitorAndTradeCfgUI.TdaTradeRotEnable.setChecked(self.TradeDict["TdaTradeRotEnable"])
         self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.setText(self.TradeDict["TdaAPIOAuthUserID"])
+        self.MonitorAndTradeCfgUI.TdaAccountID.setText(self.TradeDict["TdaAccountID"])
         self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.setText(self.TradeDict["TdaAPIRefreshToken"])
 
+        self.MonitorParaTree = ZBaseFunc.TreeListOpt(TargetTreeList=self.MonitorAndTradeCfgUI.MonitorParaTree,
+                                                     TreeColumeItem=ZfinanceCfg.MonitorConfigTreeColumeItem)
+        self.FavorSymbolList = ZBaseFunc.TreeListOpt(TargetTreeList=self.MonitorAndTradeCfgUI.FavorSymbolList,
+                                                     TreeColumeItem=["SYMBOL"])
+        ZFavorEditor.LoadFavorListCfg(self.MonitorAndTradeCfgUI.FavorSymbolList, CheckBox=False)
 
-        self.MonitorAndTradeCfgUI.MonitorPara.setColumnCount(3)
-        self.MonitorAndTradeCfgUI.MonitorPara.setHeaderLabels(('Key', 'Value', 'Comment'))
-        self.MonitorAndTradeCfgUI.MonitorPara.clear()
-        # self.BackTestCfgUI.BackTestPara.setColumnHidden(2,True)
-        for Lv1Key, Lv1Val in self.MonitorParaDict.items():
-            Lv1Child = QTreeWidgetItem(self.MonitorAndTradeCfgUI.MonitorPara)
-            Lv1Child.setText(0, Lv1Key)
-            Lv1Child.setExpanded(True)
-            if isinstance(Lv1Val, dict):
-                for Lv2Key, Lv2Val in Lv1Val.items():
-                    if Lv2Key == 'Enable':
-                        Lv1Child.setText(2, 'CheckBox')
-                        if Lv2Val == True:
-                            Lv1Child.setCheckState(0, Qt.Checked)
-                        else:
-                            Lv1Child.setCheckState(0, Qt.Unchecked)
-                    else:
-                        Lv2Child = QTreeWidgetItem(Lv1Child)
-                        Lv2Child.setExpanded(True)
-                        if isinstance(Lv2Val, dict):
-                            Lv2Child.setText(0, Lv2Key)
-                            for Lv3Key, Lv3Val in Lv2Val.items():
-                                if Lv3Key == 'Enable':
-                                    Lv2Child.setText(2, 'CheckBox')
-                                    if Lv3Val == True:
-                                        Lv2Child.setCheckState(0, Qt.Checked)
-                                    else:
-                                        Lv2Child.setCheckState(0, Qt.Unchecked)
-                                else:
-                                    Lv3Child = QTreeWidgetItem(Lv2Child)
-                                    Lv3Child.setExpanded(True)
-                                    Lv3Child.setText(0, Lv3Key)
-                                    if (isinstance(Lv3Val, bool)):
-                                        Lv3Child.setText(2, "CheckBox-")
-                                        if Lv3Val:
-                                            Lv3Child.setCheckState(1, Qt.Checked)
-                                        else:
-                                            Lv3Child.setCheckState(1, Qt.Unchecked)
-                                    else:
-                                        Lv3Child.setText(1, str(Lv3Val))
-                                    Lv3Child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable)
-                        else:
-                            Lv2Child.setText(0, Lv2Key)
-                            if (isinstance(Lv2Val, bool)):
-                                Lv2Child.setText(2, "CheckBox-")
-                                if Lv2Val:
-                                    Lv2Child.setCheckState(1, Qt.Checked)
-                                else:
-                                    Lv2Child.setCheckState(1, Qt.Unchecked)
-                            else:
-                                Lv2Child.setText(1, str(Lv2Val))
-                            Lv2Child.setFlags(Qt.ItemIsEnabled | Qt.ItemIsEditable | Qt.ItemIsUserCheckable)
-            else:
-                Lv1Child.setText(1, Lv1Val)
-
-    def HandleApplyBackTestPara(self):
-        pass
+        TempFolderPath = os.getcwd() + "\\Data\\00_Config\\DefaultMonitorAndTrade.ZMTcfg"
+        self.MonitorParaTree.LoadFromConfigFile_L2(FileName=TempFolderPath)
 
     def HandleVerifyTradeConfig(self):
         SendMailBoxAddr = self.MonitorAndTradeCfgUI.SendMailBoxAddr.text()
@@ -171,36 +120,40 @@ class MonitorAndTradeProc:
 
         TdaAPIOAuthUserID = self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.text()
         TdaAPIRefreshToken = self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.text()
+        TdaAccountID = self.MonitorAndTradeCfgUI.TdaAccountID.text()
 
         MailNotifyResult = "NA"
-        TDAStatus = "NA"
+        TDAAPIStatus = "NA"
+        TDAAccountStatus = "NA"
         if self.MonitorAndTradeCfgUI.MailNotifyEnable.isChecked():
             MailNotifyResult = ZNotify.send_email(SendAddr=SendMailBoxAddr,SendPwd=SendMailBoxPwd,RevAddr=RevMailBoxAddr,subject="ZfinanceTest",html_body="Check")
         if self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.isChecked() or self.MonitorAndTradeCfgUI.TdaTradeRotEnable.isChecked():
-            TDAStatus,TdaAPIRefreshToken,TdaAPIAccessToken = ZTrader.GetNewAccessToken(OAuthUserID=TdaAPIOAuthUserID,RefreshToken=TdaAPIRefreshToken,TradeDict=self.TradeDict)
-            if TDAStatus =="Get Token Successed":
+            TDAAPIStatus,TdaAPIRefreshToken,TdaAPIAccessToken = self.TDAAPI.GetNewAccessToken(OAuthUserID=TdaAPIOAuthUserID,RefreshToken=TdaAPIRefreshToken,TradeDict=self.TradeDict)
+            if TDAAPIStatus =="Get Token Successed":
                 self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.setText(TdaAPIRefreshToken)
+                ZBaseFunc.Log2LogBox("AccessToken:"+TdaAPIAccessToken)
+                if self.MonitorAndTradeCfgUI.TdaTradeRotEnable.isChecked():
+                    TDAAccountStatus,TDAAccountInfo = self.TDAAPI.GetAccountInfo(TdaAccountID = TdaAccountID,TdaAPIAccessToken = TdaAPIAccessToken)
 
-        QMessageBox.information(None, "警告", "163邮件提醒验证："+MailNotifyResult+"\r\n"+"TDAmeritrade API 验证："+TDAStatus, QMessageBox.Yes,
+        QMessageBox.information(None, "警告", "163邮件提醒验证："+MailNotifyResult+"\r\n"+"TDAmeritrade API 验证："+TDAAPIStatus+"\r\n"+"Tda Account验证："+TDAAccountStatus, QMessageBox.Yes,
                                 QMessageBox.Yes)
-
-
     def HandleCloseMonitorParaEditor(self):
+        self.MonitorAndTradeCfgUI.close()
         pass
-
     def HandleSaveTradeConfig(self):
+
+        self.TradeDict["MailNotifyEnable"]=self.MonitorAndTradeCfgUI.MailNotifyEnable.isChecked()
         self.TradeDict["SendMailBoxAddr"] = self.MonitorAndTradeCfgUI.SendMailBoxAddr.text()
         self.TradeDict["SendMailBoxPwd"] = self.MonitorAndTradeCfgUI.SendMailBoxPwd.text()
         self.TradeDict["RevMailBoxAddr"] = self.MonitorAndTradeCfgUI.RevMailBoxAddr.text()
-        self.TradeDict["MailNotifyEnable"]=self.MonitorAndTradeCfgUI.MailNotifyEnable.isChecked()
 
-        self.TradeDict["TdaAPIOAuthUserID"] = self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.text()
-        self.TradeDict["TdaAPIRefreshToken"] = self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.text()
         self.TradeDict["TdaAccountMonitorEnable"] =self.MonitorAndTradeCfgUI.TdaAccountMonitorEnable.isChecked()
         self.TradeDict["TdaTradeRotEnable"] = self.MonitorAndTradeCfgUI.TdaTradeRotEnable.isChecked()
+        self.TradeDict["TdaAPIOAuthUserID"] = self.MonitorAndTradeCfgUI.TdaAPIOAuthUserID.text()
+        self.TradeDict["TdaAccountID"] = self.MonitorAndTradeCfgUI.TdaAccountID.text()
+        self.TradeDict["TdaAPIRefreshToken"] = self.MonitorAndTradeCfgUI.TdaAPIRefreshToken.text()
 
         ZBaseFunc.SaveConfigFile(FileName="DefaultTradePara.ZFtd",DumpDict=self.TradeDict)
-
     def HandleOpenGroupBackTestParas(self):
         self.BackTestParaGroups, ok = QFileDialog.getOpenFileNames(None, "选择配置文件", 'Data/00_Config/BackTestParaGroup', '(*.ZFbt)')
         if len(self.BackTestParaGroups) == 0:
@@ -211,243 +164,251 @@ class MonitorAndTradeProc:
             if GlobalSingleRunningFlag == False:
                 self.GlobalMainUI.StartGroupBackTestings.setDisabled(False)
 
+    def HandleCleanMonitorTable(self):
+        self.MonitorAndTradeTable.InitTable()
     def HandleImportToMonitorTable(self):
-        ZBaseFunc.CleanTable(Table=self.GlobalMainUI.MonitorAndTradeTable,TableColumeItem=ZfinanceCfg.MonitorTableColumeItem)
-        ZBaseFunc.AddFavorListToTable(InputList=self.MonitorAndTradeCfgUI.MonitorSymbolList,OutputTable=self.GlobalMainUI.MonitorAndTradeTable)
-        self.GlobalMainUI.StartMonitorAndTrade.setDisabled(False)
+
+        SymbolDict = dict()
+
+        StrategyList = self.MonitorParaTree.GetL0RootItems()
+        for Strategy in StrategyList:
+            SymbolList = self.MonitorParaTree.GetChildrenOfRootByName(Strategy["StrategyName"])
+            self.StrategyPathDict[Strategy["StrategyName"]] = Strategy["StrategyPath"]
+            for Symbol in SymbolList:
+                SymbolDict["Symbol"] = Symbol
+                SymbolDict["Strategy"] = Strategy["StrategyName"]
+                self.MonitorAndTradeTable.AddOneRowInTable(RowDict=SymbolDict)
+
         self.GlobalMainUI.StartMonitorAndTrade.setText("开始监控")
         pass
-
-    def CancelAllChildrenInFavorList(self):
-        self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
-        cursor = QTreeWidgetItemIterator(self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem())
-        ChildCnt = cursor.value().childCount()
-        cursor = cursor.__iadd__(1)
-
-        for i in range(ChildCnt):
-            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Unchecked)
-            cursor = cursor.__iadd__(1)
-
-    def SelectAllChildrenInFavorList(self):
-        self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
-        cursor = QTreeWidgetItemIterator(self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem())
-        ChildCnt = cursor.value().childCount()
-        cursor = cursor.__iadd__(1)
-
-        for i in range(ChildCnt):
-            cursor.value().setCheckState(0, PySide2.QtCore.Qt.CheckState.Checked)
-            cursor = cursor.__iadd__(1)
-
-    def FavorListChechboxSelectMenu(self):
+    def MonitorAndTradeTableSelectMenu(self):           #监控table的菜单处理
         popMenu = QMenu()
-        if self.MonitorAndTradeCfgUI.MonitorSymbolList.currentItem().parent() == None:
+        print(self.GlobalMainUI.MonitorAndTradeTable.currentRow())
+        print(self.GlobalMainUI.MonitorAndTradeTable.currentColumn())
+        if(self.GlobalMainUI.MonitorAndTradeTable.currentColumn() == 0):
+            SelectAll  = popMenu.addAction("重选策略")
+            CancelAll  = popMenu.addAction("重新计算")
+            Delete     = popMenu.addAction("删除")
+            ModifyName = popMenu.addAction("禁用")
+        else:
+            SelectAll  = popMenu.addAction('启动通知')
+            CancelAll  = popMenu.addAction("启动自动交易")
+            Delete     = popMenu.addAction("取消通知")
+            ModifyName = popMenu.addAction("取消自动交易")
 
+        CancelAll.triggered.connect(self.CancelAllChildrenInMonitorParaTree)
+        SelectAll.triggered.connect(self.SelectAllChildrenInMonitorParaTree)
+        Delete.triggered.connect(self.DeleteStrategyInMonitorParaTree)
+        ModifyName.triggered.connect(self.ModifyNameStrategyNameInMonitorParaTree)
+
+        popMenu.exec_(QCursor.pos())
+    def CancelAllChildrenInMonitorParaTree(self):
+        self.MonitorParaTree.SetCheckChildrenOfSelectRoot(Check=False)
+        pass
+    def SelectAllChildrenInMonitorParaTree(self):
+        self.MonitorParaTree.SetCheckChildrenOfSelectRoot(Check=True)
+        pass
+    def DeleteStrategyInMonitorParaTree(self):
+        self.MonitorParaTree.DelSelected()
+        pass
+    def ModifyNameStrategyNameInMonitorParaTree(self):
+        TempName = self.MonitorParaTree.GetSelectedItemName()
+        text, ok = QInputDialog.getText(None, '创建新分类', '输入新分类名称:',text=TempName)
+        if ok:
+            Roots = self.MonitorParaTree.GetL0RootItems()
+            RootsName = []
+            for temp in Roots:
+                RootsName.append(temp['StrategyName'])
+
+            if text  in RootsName:
+                QMessageBox.information(None, "警告", "存在重名", QMessageBox.Yes,QMessageBox.Yes)
+                return
+            self.MonitorParaTree.ModifySelected(text)
+    def MonitorParaTreeSelectMenu(self):
+        popMenu = QMenu()
+        if self.MonitorAndTradeCfgUI.MonitorParaTree.currentItem().parent() == None:
             SelectAll  = popMenu.addAction('全选')
             CancelAll  = popMenu.addAction("取消全选")
+            Delete     = popMenu.addAction("删除")
+            ModifyName = popMenu.addAction("改名")
+
+            CancelAll.triggered.connect(self.CancelAllChildrenInMonitorParaTree)
+            SelectAll.triggered.connect(self.SelectAllChildrenInMonitorParaTree)
+            Delete.triggered.connect(self.DeleteStrategyInMonitorParaTree)
+            ModifyName.triggered.connect(self.ModifyNameStrategyNameInMonitorParaTree)
+        else:
+            Delete = popMenu.addAction("删除")
+
+            Delete.triggered.connect(self.DeleteStrategyInMonitorParaTree)
+        popMenu.exec_(QCursor.pos())
+    def CancelAllChildrenInFavorList(self):
+        self.FavorSymbolList.SetCheckChildrenOfSelectRoot(Check=False)
+    def SelectAllChildrenInFavorList(self):
+        self.FavorSymbolList.SetCheckChildrenOfSelectRoot(Check=True)
+    def ImportAllChildren_To_MonitorParaTree(self):
+        SymbolList = self.FavorSymbolList.GetCheckedSymbol(Check=True)
+        for SYM in SymbolList:
+            self.MonitorParaTree.AddChildToSelectRoot(AddItem=SYM, CheckBox=True)
+    def ImportThisChildren_To_MonitorParaTree(self):
+        Children = self.FavorSymbolList.GetChildrenOfSelectRoot()
+        if type(Children) == type(list()):
+            for Child in Children:
+                self.MonitorParaTree.AddChildToSelectRoot(AddItem=Child, CheckBox=True)
+        else:
+            self.MonitorParaTree.AddChildToSelectRoot(AddItem=Children, CheckBox=True)
+    def FavorListChechboxSelectMenu(self):
+        popMenu = QMenu()
+        if self.MonitorAndTradeCfgUI.FavorSymbolList.currentItem().parent() == None:
+            SelectAll  = popMenu.addAction('全选')
+            CancelAll  = popMenu.addAction("取消全选")
+            ImportAll = popMenu.addAction("添加所有选中的")
+            ImportThis = popMenu.addAction("添加当前所有子项")
 
             CancelAll.triggered.connect(self.CancelAllChildrenInFavorList)
             SelectAll.triggered.connect(self.SelectAllChildrenInFavorList)
+            ImportAll.triggered.connect(self.ImportAllChildren_To_MonitorParaTree)
+            ImportThis.triggered.connect(self.ImportThisChildren_To_MonitorParaTree)
+        else:
+            ImportThis = popMenu.addAction("添加当前项")
+
+            ImportThis.triggered.connect(self.ImportThisChildren_To_MonitorParaTree)
+
+
         popMenu.exec_(QCursor.pos())
         return
+    def HandleSaveMonitorAndTradePara(self):
+        TempFolderPath = os.getcwd() + "\\Data\\00_Config\\DefaultMonitorAndTrade.ZMTcfg"
+        self.MonitorParaTree.SaveToConfigFile_L2(FilePath=TempFolderPath)
+    def HandleAddBackTestPara(self):
+        BackTestParaGroups, ok = QFileDialog.getOpenFileNames(None, "选择配置文件",
+                                                                   'Data/00_Config/BackTestParaGroup',
+                                                                   '(*.ZFbt)')
+        if ok:
+            Roots = self.MonitorParaTree.GetL0RootItems()
+            RootsName = []
+            for temp in Roots:
+                RootsName.append(temp['StrategyName'])
 
-
-    def HandleSaveBackTestPara(self):
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestPara)
-
-        for i in range(self.BackTestCfgUI.BackTestPara.topLevelItemCount()):
-            if cursor.value().childCount() != 0:
-                Lv1Key = cursor.value().text(0)
-                Lv2ChCnt = cursor.value().childCount()
-                self.BackTestDict.setdefault(Lv1Key, {})
-                if cursor.value().text(2) == 'CheckBox':
-                    if (cursor.value().checkState(0)):
-                        self.BackTestDict[Lv1Key]['Enable'] = True
-                    else:
-                        self.BackTestDict[Lv1Key]['Enable'] = False
-                cursor = cursor.__iadd__(1)
-                for j in range(Lv2ChCnt):
-                    if cursor.value().childCount() != 0:
-                        Lv2Key = cursor.value().text(0)
-                        Lv3ChCnt = cursor.value().childCount()
-                        self.BackTestDict[Lv1Key].setdefault(Lv2Key, {})
-                        if cursor.value().text(2) == 'CheckBox':
-                            if (cursor.value().checkState(0)):
-                                self.BackTestDict[Lv1Key][Lv2Key]['Enable'] = True
-                            else:
-                                self.BackTestDict[Lv1Key][Lv2Key]['Enable'] = False
-                        cursor = cursor.__iadd__(1)
-                        for k in range(Lv3ChCnt):
-                            if cursor.value().text(2) == 'CheckBox-':
-                                if (cursor.value().checkState(1)):
-                                    self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = True
-                                else:
-                                    self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = False
-                            else:
-                                if type(self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)]) == float:
-                                    self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = float(cursor.value().text(1))
-                                else:
-                                    self.BackTestDict[Lv1Key][Lv2Key][cursor.value().text(0)] = int(cursor.value().text(1))
-                            cursor = cursor.__iadd__(1)
-                    else:
-                        if cursor.value().text(2) == 'CheckBox':
-                            Lv2Key = cursor.value().text(0)
-                            self.BackTestDict[Lv1Key].setdefault(Lv2Key, {})
-                            if (cursor.value().checkState(0)):
-                                self.BackTestDict[Lv1Key][Lv2Key]['Enable'] = True
-                            else:
-                                self.BackTestDict[Lv1Key][Lv2Key]['Enable'] = False
-                        elif cursor.value().text(2) == 'CheckBox-':
-                            if (cursor.value().checkState(1)):
-                                self.BackTestDict[Lv1Key][cursor.value().text(0)] = True
-                            else:
-                                self.BackTestDict[Lv1Key][cursor.value().text(0)] = False
-                        if cursor.value().text(1) != '':
-                            if type(self.BackTestDict[Lv1Key][cursor.value().text(0)]) == float :
-                                self.BackTestDict[Lv1Key][cursor.value().text(0)] = float(cursor.value().text(1))
-                            else:
-                                self.BackTestDict[Lv1Key][cursor.value().text(0)] = int(cursor.value().text(1))
-                        cursor = cursor.__iadd__(1)
-            else:
-                if type(self.BackTestDict[Lv1Key[cursor.value().text(0)]]) == float:
-                    self.BackTestDict[Lv1Key[cursor.value().text(0)]] = float(cursor.value().text(1))
-                else:
-                    self.BackTestDict[Lv1Key][cursor.value().text(0)] = int(cursor.value().text(1))
-                cursor = cursor.__iadd__(1)
-
-        BackTestParaFilePathName = os.getcwd() + '\\Data\\00_Config\\DefaultBackTestPara.ZFbt'
-        with open(BackTestParaFilePathName, "w") as f:
-            json.dump(self.BackTestDict, f)
-        self.BackTestDictGenPara = self.BackTestDict
-
-    def HandleGenBackTestParaFiles(self):
-
-        self.HandleSaveBackTestPara()
-        BackTestDict = self.BackTestDictGenPara
-
-        cursor = QTreeWidgetItemIterator(self.BackTestCfgUI.BackTestPara)
-
-
-        TempDictIndexList = []
-        while cursor.value():
-            Temp = cursor.value()
-            TempDictIndex = []
-            if Temp.text(2).split(':')[0] != Temp.text(2):
-                StepX = Temp.text(2)
-                TempDictIndex.insert(0, Temp.text(0))
-                while Temp.parent() != None:
-                    Temp = Temp.parent()
-                    TempDictIndex.insert(0,Temp.text(0))
-                TempDictIndexList.insert(0,{"TempDictIndex":TempDictIndex,"StepX":StepX})
-
-            cursor = cursor.__iadd__(1)
-
-        TempFolderPath = os.getcwd() + "\\Data\\00_Config\\BackTestParaGroup"
-        try:
-            os.mkdir(TempFolderPath)
-        except:
-            pass
-        DateTimeStr = time.strftime("%Y-%m-%d %H_%M_%S", time.localtime())
-        TempFolderPath = TempFolderPath+'\\'+DateTimeStr
-        os.mkdir(TempFolderPath)
-        j=0
-        self.GenZFbtFileSum = 1
-        for iTempDictIndexList in TempDictIndexList:
-            StepX = iTempDictIndexList["StepX"]
-            TempDictIndex = iTempDictIndexList["TempDictIndex"]
-            if len(TempDictIndex) == 3:
-                TempDictIndexStr = "BackTestDict['"+TempDictIndex[0]+"']['"+TempDictIndex[1]+"']['"+TempDictIndex[2]+"']"
-            elif len(TempDictIndex) == 2:
-                TempDictIndexStr = "BackTestDict['"+TempDictIndex[0]+"']['"+TempDictIndex[1]+"']"
-            elif len(TempDictIndex) == 1:
-                TempDictIndexStr = "BackTestDict['"+TempDictIndex[0]+"']"
-            else:
-                print(TempDictIndex)
-
-            if type(eval(TempDictIndexStr)) == float:
-                StartNum = float(StepX.split(':')[0])
-                EndNum = float(StepX.split(':')[1])
-                StepNum = float(StepX.split(':')[2])
-            else:
-                StartNum = int(StepX.split(':')[0])
-                EndNum = int(StepX.split(':')[1])
-                StepNum = int(StepX.split(':')[2])
-            StepXList = np.arange(StartNum, EndNum, StepNum).tolist()
-            TempDictIndexList[j]["TempDictIndexStr"] = TempDictIndexStr
-            TempDictIndexList[j]["StepXList"] = StepXList
-            j+=1
-            self.GenZFbtFileSum = self.GenZFbtFileSum * len(StepXList)
-
-        self.GenZFbtFileCnt = 0
-        self.funx(TempDictIndexList,BackTestDict,TempFolderPath)
-        ZBaseFunc.Log2LogBox("Generate %d ZFbt files"%(self.GenZFbtFileSum))
-        return
-
-    def funx(self,TempDictIndexList=[],BackTestDict = dict(),TempFolderPath=''):
-        TempDictIndexDict = TempDictIndexList.pop()
-        if (len(TempDictIndexList) == 0):
-            for iPara in TempDictIndexDict['StepXList']:
-                ExceStr = TempDictIndexDict['TempDictIndexStr']+'= iPara'
-                exec(ExceStr)
-                BackTestParaFilePathName = TempFolderPath + '\\BackTestPara_' + datetime.datetime.now().strftime(
-                    '%Y-%m-%d %H_%M_%S.%f') + '.ZFbt'
-                with open(BackTestParaFilePathName, "w") as f:
-                     json.dump(BackTestDict, f, indent=1)
-                self.GenZFbtFileCnt +=1
-                self.GlobalMainUI.FunAnaGroupProgressBar.setValue(self.GenZFbtFileCnt/self.GenZFbtFileSum * 100)
-
-            return
+            i = 0
+            PropertyX = dict()
+            for BackTestPara in BackTestParaGroups:
+                ShortName = BackTestPara.split('/')[-1].split('.ZFbt')[0]
+                while ShortName in RootsName:
+                    i += 1
+                    ShortName = BackTestPara.split('/')[-1].split('.ZFbt')[0]+'_('+str(i)+')'
+                PropertyX["StrategyPath"] = BackTestPara
+                self.MonitorParaTree.AddL1RootToTreeList(AddItem = ShortName,Property=PropertyX,CheckBox=True)
         else:
-            for iPara in TempDictIndexDict['StepXList']:
-                ExceStr = TempDictIndexDict['TempDictIndexStr']+'= iPara'
-                exec(ExceStr)
-                tishen = copy.deepcopy(TempDictIndexList)
-                self.funx(tishen,BackTestDict,TempFolderPath)
-
-
-    def HandleLoadBackTestPara(self):
-        pass
-
+            return
     def HandleSaveMonitorPara(self):
         self.BackTestCfgUI.close()
         pass
-
+    def GetStrategyParaDict(self,StrategyName):
+        return ZBaseFunc.LoadConfigFilePath(self.StrategyPathDict[StrategyName],dict())
     def HandleStartMonitorAndTrade(self):
         global GlobalOnlineFlag
-        if GlobalOnlineFlag:
-            requests.Request()
+        ##############################################测试代码XXXXXXXXX
+        self.HandleSetMonitorAndTradePara()
+        self.HandleVerifyTradeConfig()
+        ZBaseFunc.SetDLAPIPara('PROXY','http://127.0.0.1:7890')
+        ZBaseFunc.TestTheAPI(Platfrom=ZfinanceCfg.DownloadPlatform.yfinance)
+        ZBaseFunc.TestTheAPI(Platfrom=ZfinanceCfg.DownloadPlatform.efinance)
+        ZBaseFunc.TestTheAPI(Platfrom=ZfinanceCfg.DownloadPlatform.TdaAPI)
 
-        else:
-            pass
+        #######################################################
+
+  #      self.TDAAPI.GetNewAccessToken(TradeDict=self.TradeDict)
+
+  #      Status,AccountInfo = self.TDAAPI.GetAccountInfo()
+  #      self.GlobalMainUI.NetLiqInTdaAccount.display(AccountInfo["NetLiq"])
+        sym = self.MonitorAndTradeTable.GetOneRowInTable(1)
+        StrategyParas = self.GetStrategyParaDict(sym['Strategy'])
+        self.MonitorTheSymbol( sym['Symbol'], StrategyParas)
+
+    def WaitNewData(self, Symbol = "",Interval = "5m",SleepTime = 3,LastDataTimeStamp = ""):
+        DisplayResult = dict()
+        SYM = ZBaseFunc.MarketQuotations(Symbol)
+        DisplayResult["Symbol"] = Symbol
+
+        while True :
+            DisplayResult["RT Info"] = SYM.GetCurrentPrice()
+            ZBaseFunc.DisplayInTable(ResultTable=self.GlobalMainUI.MonitorAndTradeTable,SymbolResult = DisplayResult)
+            time.sleep(SleepTime)
+            Tempdf = SYM.GetCurrentData()
+            if (Interval == '1d'):
+                Tempdf.index = Tempdf.index.strftime("%Y-%m-%d")
+            else:
+                Tempdf.index = Tempdf.index.strftime("%Y-%m-%d %H:%M")
+
+            if Tempdf.index[-1] != LastDataTimeStamp:
+                NewDf = Tempdf.iloc[LastDataTimeStamp:, :]
+                break
+        DisplayResult["RT Info"] = "Computing.."
+        ZBaseFunc.DisplayInTable(ResultTable=self.GlobalMainUI.MonitorAndTradeTable,SymbolResult = DisplayResult)
+        return NewDf , len(NewDf)
 
 
 
-    def CleanTable(self):
-        self.GlobalMainUI.BackTestTable.clear()
-        self.GlobalMainUI.BackTestTable.setRowCount(len(self.BMList))
-        self.GlobalMainUI.BackTestTable.setColumnCount(len(ZfinanceCfg.BMTableColumeItem) + 1)
+        pass
+    def MonitorTheSymbol(self,Symbol,StrategyParas):
 
-        self.GlobalMainUI.BackTestTable.verticalHeader().setVisible(False)
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setDefaultAlignment(PySide2.QtCore.Qt.AlignLeft)
-        self.GlobalMainUI.BackTestTable.setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.horizontalHeader().setFont(QFont('song', 8))
-        self.GlobalMainUI.BackTestTable.verticalScrollBar().setValue(0)
-        Row = 0
-        for i in self.BMList:
-            SymbolsInTable = PySide2.QtWidgets.QTableWidgetItem(i)
-            self.GlobalMainUI.BackTestTable.setRowHeight(Row, 5)
-            self.GlobalMainUI.BackTestTable.setItem(Row, 0, SymbolsInTable)
-            Row = Row + 1
+        ActionList = []
+        SymbolResult = dict()
+        Interval = StrategyParas["Period&Interval"]["Interval"]
+        Period   = StrategyParas["Period&Interval"]["Period"]
 
-        self.GlobalMainUI.BackTestTable.setColumnWidth(0, 40)
+        SymbolResult["Symbol"] = Symbol
 
-        Col = 1
-        for i in range(len(ZfinanceCfg.BMTableColumeItem)):
-            self.GlobalMainUI.BackTestTable.setColumnWidth(Col, 60)
-            Col = Col + 1
-        self.GlobalMainUI.BackTestTable.setColumnWidth(1, 80)
-        self.GlobalMainUI.BackTestTable.setColumnWidth(2, 80)
-        Temp = ['SYM']
-        for i in ZfinanceCfg.BMTableColumeItem:
-            Temp.append(i)
-        self.GlobalMainUI.BackTestTable.setHorizontalHeaderLabels(Temp)
+        InitOHLCVDataFrame = ZStrategy.GetSymbolInitOHLCV(Symbol=Symbol,                            # 读取初始数据            --系统
+                                                          Period=Period,
+                                                          Interval=Interval,
+                                                          OnlineMode=True)
 
+        USRStrategy  = ZStrategy.OpenStrategysPlatform(InitOHLCVDataFrame, StrategyParas)           # 创建开放策略平台对象       --系统
+        InitResult   = USRStrategy.CalcInitIndicators()                                             # 计算初始指数数据（原始数据） **用户编写**
+        SymbolEquity = ZStrategy.EquityPlatform(ShareVol=100,StartPrice=InitResult["StartPrice"])   # 计算初始指数数据（原始数据） **用户编写**
+
+        HeadPt = InitResult["SkipLength"]                                                   # 前面多少个数据要跳过运算
+        TailPt = InitResult["Length"]                                                       # 数据总长度
+
+        ActionList.append({                                                                 # 初始化第一次的状态为观望
+            'TimeStamp': InitResult['StartTime'], 'Value': InitResult['HighPrice'],
+            'Action': ZfinanceCfg.StrategyStatusTag[ZfinanceCfg.TradingStatu.Watch]["Tag"],
+            'Color': ZfinanceCfg.StrategyStatusTag[ZfinanceCfg.TradingStatu.Watch]["Color"]
+        })
+
+        #死循环
+        while True:
+            #for循环（新数据长度）
+            for i in range(HeadPt, TailPt):                                                     # for循环开始迭代计算
+                StrategyResult = USRStrategy.LoopStrategys(i)                                   # 策略计算，输出要按照StrategyResult对上  **用户编写**
+
+                if StrategyResult.FlagStatusChanged:                                            # 如果系统有操作状态的变化
+                    ActionList.append({                                                         # 记录操作变化
+                        'TimeStamp': StrategyResult.TimeStamp, 'Value': StrategyResult.HighPrice,
+                        'Action': ZfinanceCfg.StrategyStatusTag[StrategyResult.TradingStatus]["Tag"],
+                        'Color': ZfinanceCfg.StrategyStatusTag[StrategyResult.TradingStatus]["Color"]
+                    })
+                EquityResult = SymbolEquity.CalcResidualEquity(TradeAction=StrategyResult.TradingStatus,
+                                                               OptPrice=StrategyResult.ClosePrice,
+                                                               ClosePrice=StrategyResult.ClosePrice)
+
+            HeadPt = TailPt
+            # 输出结果显示 ---系统函数
+            SymbolResult["NOTIFY"]      = 'OFF'
+            SymbolResult["TDA AUTO"]    = 'OFF'
+            SymbolResult["Trading"]     =ZfinanceCfg.StrategyStatusTag[StrategyResult.TradingStatus]["Tag"]
+            SymbolResult["Price@Start"] = str(InitResult["StartPrice"])+'@'+InitResult['StartTime'].split(' ')[0]
+            SymbolResult["Update"]      = StrategyResult.TimeStamp.split(' ')[1]
+            SymbolResult["Curr Price"]  = str(StrategyResult.ClosePrice)
+            SymbolResult["StdPL Ratio"] = str(round(EquityResult["Std_PL_Ratio"], 2)) + '%'
+            SymbolResult["FixPL Ratio"] = str(round(EquityResult["Fix_PL_Ratio"], 2)) + '%'
+
+            self.MonitorAndTradeTable.RefreshOneRowInTable(SymbolResult=SymbolResult)
+
+            return
+            # 等待数据  --系统函数
+            NewOHLCVDataFrame = self.WaitNewData(Symbol=Symbol,Interval = Interval,SleepTime=1/100)
+            TailPt = TailPt + len(NewOHLCVDataFrame)
+            #（指数数据 新数据长度）= 计算新数据的指数（指数数据）  --用户写
+            self.USRStrategy.CalcNewIndicators(NewOHLCVDataFrame)
